@@ -2,64 +2,28 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import './Auth.css';
 import usersData from '../data/usersData.json';
-import { useGoogleAuth } from '../hooks/useGoogleAuth';
+import { useFirebaseAuth } from '../hooks/useFirebaseAuth';
 
 const Login = ({ setUser }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const navigate = useNavigate();
 
-  const handleGoogleLogin = () => {
-    // Check if Google Client ID is configured
-    const clientId = process.env.REACT_APP_GOOGLE_CLIENT_ID;
+  const { signInWithGoogle } = useFirebaseAuth();
+
+  const handleGoogleLogin = async () => {
+    const result = await signInWithGoogle();
     
-    if (!clientId || clientId === 'YOUR_GOOGLE_CLIENT_ID_HERE') {
-      // Demo mode - working Google login simulation
-      const googleUser = {
-        id: 'google_' + Date.now(),
-        name: 'Google User',
-        email: 'user@gmail.com',
-        picture: '👤',
-        role: 'customer',
-        phone: '',
-        address: '',
-        provider: 'google'
-      };
-      
-      setUser(googleUser);
-      sessionStorage.setItem('currentUser', JSON.stringify(googleUser));
+    if (result.success) {
+      setUser(result.user);
+      sessionStorage.setItem('currentUser', JSON.stringify(result.user));
       navigate('/menu');
-      return;
+    } else {
+      if (result.error !== 'Sign-in cancelled') {
+        alert(result.error || 'Google login failed. Please try again.');
+      }
     }
-
-    // Real Google OAuth (when Client ID is configured)
-    googleSignIn();
   };
-
-  const handleGoogleSuccess = (userData) => {
-    const user = {
-      id: userData.id,
-      name: userData.name,
-      email: userData.email,
-      picture: userData.picture,
-      role: 'customer',
-      phone: '',
-      address: '',
-      provider: 'google'
-    };
-    
-    setUser(user);
-    sessionStorage.setItem('currentUser', JSON.stringify(user));
-    navigate('/menu');
-  };
-
-  const handleGoogleError = (error) => {
-    console.error('Google login error:', error);
-    alert('Google login failed. Please try again or use email/password login.');
-  };
-
-  // Initialize Google Auth hook
-  const { signIn: googleSignIn } = useGoogleAuth(handleGoogleSuccess, handleGoogleError);
 
   const handleSubmit = (e) => {
     e.preventDefault();
