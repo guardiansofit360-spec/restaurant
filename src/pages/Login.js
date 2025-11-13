@@ -33,11 +33,7 @@ const Login = ({ setUser }) => {
     }
 
     // Real Google OAuth (when Client ID is configured)
-    if (window.google) {
-      window.google.accounts.id.prompt();
-    } else {
-      alert('Google Sign-In is loading... Please try again in a moment.');
-    }
+    googleSignIn();
   };
 
   const handleGoogleSuccess = (userData) => {
@@ -63,7 +59,7 @@ const Login = ({ setUser }) => {
   };
 
   // Initialize Google Auth hook
-  useGoogleAuth(handleGoogleSuccess, handleGoogleError);
+  const { signIn: googleSignIn } = useGoogleAuth(handleGoogleSuccess, handleGoogleError);
 
   const handleSubmit = (e) => {
     e.preventDefault();
