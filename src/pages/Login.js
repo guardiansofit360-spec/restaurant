@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { signInWithPopup, signInWithPhoneNumber, RecaptchaVerifier } from 'firebase/auth';
+import { signInWithRedirect, signInWithPopup, signInWithPhoneNumber, RecaptchaVerifier, getRedirectResult } from 'firebase/auth';
 import { auth, googleProvider } from '../config/firebase';
 import './Auth.css';
 import apiService from '../services/apiService';
@@ -15,12 +15,46 @@ const Login = ({ setUser }) => {
   const [error, setError] = useState('');
   const navigate = useNavigate();
 
+  // Handle redirect result on component mount
+  useEffect(() => {
+    const handleRedirectResult = async () => {
+      try {
+        const result = await getRedirectResult(auth);
+        if (result && result.user) {
+          await processGoogleUser(result.user);
+        }
+      } catch (error) {
+        console.error('Redirect result error:', error);
+        setError('Authentication failed. Please try again.');
+      }
+    };
+    handleRedirectResult();
+  }, []);
+
   const handleGoogleLogin = async () => {
     try {
       setError('');
-      const result = await signInWithPopup(auth, googleProvider);
-      const user = result.user;
+      
+      // Try popup first, fallback to redirect if it fails
+      try {
+        const result = await signInWithPopup(auth, googleProvider);
+        await processGoogleUser(result.user);
+      } catch (popupError) {
+        // If popup is blocked, use redirect
+        if (popupError.code === 'auth/popup-blocked' || popupError.code === 'auth/popup-closed-by-user') {
+          await signInWithRedirect(auth, googleProvider);
+        } else {
+          throw popupError;
+        }
+      }
+    } catch (error) {
+      console.error('Google login error:', error);
+      setError('Google login failed. Please try again.');
+    }
+  };
 
+  const processGoogleUser = async (user) => {
+    try {
       // Create or get user from backend
       const userData = {
         name: user.displayName,
@@ -32,16 +66,29 @@ const Login = ({ setUser }) => {
         avatar: user.photoURL
       };
 
-      // Check if user exists, if not create
-      const response = await apiService.loginUser(user.email, 'firebase-auth');
-      
+      // Try to login first
       let finalUser;
-      if (response.error) {
-        // User doesn't exist, create new
-        const newUser = await apiService.createUser(userData);
-        finalUser = newUser;
-      } else {
-        finalUser = response;
+      try {
+        const response = await apiService.loginUser(user.email, 'firebase-auth');
+        if (response.error || !response.id) {
+          // User doesn't exist, create new
+          const newUser = await apiService.createUser(userData);
+          finalUser = newUser;
+        } else {
+          finalUser = response;
+        }
+      } catch (apiError) {
+        console.error('API Error:', apiError);
+        // If API fails, still allow login with Firebase data
+        finalUser = {
+          id: user.uid,
+          name: user.displayName,
+          email: user.email,
+          role: 'customer',
+          phone: user.phoneNumber || '',
+          address: '',
+          avatar: user.photoURL
+        };
       }
 
       const userSession = {
@@ -63,8 +110,8 @@ const Login = ({ setUser }) => {
         navigate('/menu');
       }
     } catch (error) {
-      console.error('Google login error:', error);
-      setError('Google login failed. Please try again.');
+      console.error('Process user error:', error);
+      throw error;
     }
   };
 
