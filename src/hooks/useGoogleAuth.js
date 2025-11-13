@@ -23,21 +23,38 @@ export const useGoogleAuth = (onSuccess, onError) => {
   }, [onSuccess, onError]);
 
   useEffect(() => {
-    // Initialize Google Sign-In
-    if (window.google) {
-      window.google.accounts.id.initialize({
-        client_id: GOOGLE_CLIENT_ID,
-        callback: handleCredentialResponse,
-      });
-    }
+    // Wait for Google Sign-In script to load
+    const initializeGoogleSignIn = () => {
+      if (window.google) {
+        window.google.accounts.id.initialize({
+          client_id: GOOGLE_CLIENT_ID,
+          callback: handleCredentialResponse,
+        });
+      } else {
+        // Retry after a short delay if not loaded yet
+        setTimeout(initializeGoogleSignIn, 100);
+      }
+    };
+
+    initializeGoogleSignIn();
   }, [handleCredentialResponse]);
 
   const signIn = useCallback(() => {
-    if (window.google) {
-      window.google.accounts.id.prompt();
+    if (window.google && window.google.accounts) {
+      try {
+        window.google.accounts.id.prompt((notification) => {
+          if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+            // Prompt was not displayed or user closed it
+            console.log('Google Sign-In prompt not displayed:', notification.getNotDisplayedReason());
+          }
+        });
+      } catch (error) {
+        console.error('Error showing Google Sign-In prompt:', error);
+        onError(error);
+      }
     } else {
       console.error('Google Sign-In not loaded');
-      onError(new Error('Google Sign-In not available'));
+      alert('Google Sign-In is still loading. Please wait a moment and try again.');
     }
   }, [onError]);
 
