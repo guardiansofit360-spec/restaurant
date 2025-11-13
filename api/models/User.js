@@ -1,54 +1,52 @@
-const { getDB, COLLECTIONS } = require('../config/database');
+const { pool } = require('../config/database');
 
-class UserModel {
-  static async getCollection() {
-    const db = await getDB();
-    return db.collection(COLLECTIONS.USERS);
-  }
-
+class User {
   static async findAll() {
-    const collection = await this.getCollection();
-    return await collection.find({}).toArray();
+    const [rows] = await pool.query('SELECT id, name, email, phone, address, role, created_at FROM users');
+    return rows;
   }
 
-  static async findById(userId) {
-    const collection = await this.getCollection();
-    return await collection.findOne({ id: userId });
+  static async findById(id) {
+    const [rows] = await pool.query(
+      'SELECT id, name, email, phone, address, role, created_at FROM users WHERE id = ?',
+      [id]
+    );
+    return rows[0];
   }
 
   static async findByEmail(email) {
-    const collection = await this.getCollection();
-    return await collection.findOne({ email });
+    const [rows] = await pool.query(
+      'SELECT * FROM users WHERE email = ?',
+      [email]
+    );
+    return rows[0];
   }
 
   static async create(userData) {
-    const collection = await this.getCollection();
-    const newUser = {
-      ...userData,
-      id: userData.id || Date.now().toString(),
-      createdAt: new Date(),
-      updatedAt: new Date()
-    };
-    
-    await collection.insertOne(newUser);
-    return newUser;
-  }
-
-  static async update(userId, updateData) {
-    const collection = await this.getCollection();
-    const result = await collection.findOneAndUpdate(
-      { id: userId },
-      { $set: { ...updateData, updatedAt: new Date() } },
-      { returnDocument: 'after' }
+    const { name, email, password, phone, address, role } = userData;
+    const [result] = await pool.query(
+      'INSERT INTO users (name, email, password, phone, address, role) VALUES (?, ?, ?, ?, ?, ?)',
+      [name, email, password, phone || '', address || '', role || 'customer']
     );
-    return result;
+    return this.findById(result.insertId);
   }
 
-  static async delete(userId) {
-    const collection = await this.getCollection();
-    const result = await collection.deleteOne({ id: userId });
-    return result.deletedCount > 0;
+  static async update(id, userData) {
+    const { name, email, phone, address } = userData;
+    await pool.query(
+      'UPDATE users SET name = ?, email = ?, phone = ?, address = ? WHERE id = ?',
+      [name, email, phone, address, id]
+    );
+    return this.findById(id);
+  }
+
+  static async login(email, password) {
+    const [rows] = await pool.query(
+      'SELECT id, name, email, phone, address, role FROM users WHERE email = ? AND password = ?',
+      [email, password]
+    );
+    return rows[0];
   }
 }
 
-module.exports = UserModel;
+module.exports = User;

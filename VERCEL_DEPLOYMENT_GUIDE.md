@@ -5,7 +5,6 @@
 - ✅ GitHub account (free)
 - ✅ Vercel account (free) - https://vercel.com
 - ✅ Your restaurant app ready
-- ✅ Google OAuth Client ID (from Google Cloud Console)
 
 ---
 
@@ -137,18 +136,7 @@ Replace `YOUR_USERNAME` with your GitHub username.
 
 **Install Command**: `npm install`
 
-### Step 3.4: Add Environment Variables
-
-Click "Environment Variables" and add:
-
-```
-Name: REACT_APP_GOOGLE_CLIENT_ID
-Value: 749572594280-kl6eg7aie0vtvh0b7avq80cnadh5gc7s.apps.googleusercontent.com
-```
-
-⚠️ **Important**: Use your actual Client ID!
-
-### Step 3.5: Deploy
+### Step 3.4: Deploy
 
 Click "Deploy" button!
 
@@ -156,45 +144,9 @@ Wait 2-3 minutes for deployment to complete.
 
 ---
 
-## Part 4: Configure Google OAuth for Production
+## Part 4: Custom Domain (Optional)
 
-### Step 4.1: Get Your Vercel URL
-
-After deployment, you'll get a URL like:
-```
-https://turkish-restaurant-app.vercel.app
-```
-
-Copy this URL!
-
-### Step 4.2: Update Google Cloud Console
-
-1. Go to https://console.cloud.google.com/apis/credentials
-2. Click on your OAuth 2.0 Client ID
-3. Add to **Authorized JavaScript origins**:
-   - `https://turkish-restaurant-app.vercel.app`
-   - `https://turkish-restaurant-app-git-main-yourname.vercel.app`
-   - `https://turkish-restaurant-app-yourname.vercel.app`
-
-4. Add to **Authorized redirect URIs**:
-   - `https://turkish-restaurant-app.vercel.app`
-   - `https://turkish-restaurant-app-git-main-yourname.vercel.app`
-   - `https://turkish-restaurant-app-yourname.vercel.app`
-
-5. Click "SAVE"
-
-### Step 4.3: Test Your Live App
-
-1. Visit your Vercel URL
-2. Go to Login page
-3. Click "Continue with Google"
-4. ✅ Should work!
-
----
-
-## Part 5: Custom Domain (Optional)
-
-### Step 5.1: Buy a Domain
+### Step 4.1: Buy a Domain
 
 Buy from:
 - Namecheap: https://www.namecheap.com
@@ -203,14 +155,14 @@ Buy from:
 
 Example: `turkishrestaurant.com`
 
-### Step 5.2: Add Domain to Vercel
+### Step 4.2: Add Domain to Vercel
 
 1. In Vercel dashboard, go to your project
 2. Click "Settings" → "Domains"
 3. Enter your domain: `turkishrestaurant.com`
 4. Click "Add"
 
-### Step 5.3: Configure DNS
+### Step 4.3: Configure DNS
 
 Vercel will show you DNS records to add:
 
@@ -228,21 +180,15 @@ Host: www
 Value: cname.vercel-dns.com
 ```
 
-### Step 5.4: Wait for DNS Propagation
+### Step 4.4: Wait for DNS Propagation
 
 - Takes 5 minutes to 48 hours
 - Usually works in 10-30 minutes
 - Check status: https://dnschecker.org
 
-### Step 5.5: Update Google OAuth Again
-
-Add your custom domain to Google Cloud Console:
-- `https://turkishrestaurant.com`
-- `https://www.turkishrestaurant.com`
-
 ---
 
-## Part 6: Continuous Deployment
+## Part 5: Continuous Deployment
 
 ### Automatic Deployments
 
@@ -265,7 +211,7 @@ git push
 
 ---
 
-## Part 7: Vercel Dashboard Features
+## Part 6: Vercel Dashboard Features
 
 ### Analytics
 
@@ -302,19 +248,10 @@ npm run build
 # Then push again
 ```
 
-### Google OAuth Not Working
-
-**Error**: `redirect_uri_mismatch`
-
-**Solution**:
-- Add ALL Vercel URLs to Google Console
-- Include preview URLs
-- Wait 5 minutes after saving
-
 ### Environment Variables Not Working
 
 **Solution**:
-1. Check spelling: `REACT_APP_GOOGLE_CLIENT_ID`
+1. Check spelling of environment variables
 2. Must start with `REACT_APP_`
 3. Redeploy after adding variables
 
@@ -347,11 +284,10 @@ npm run build
 ✅ **Before Going Live:**
 
 - [ ] `.env` file is in `.gitignore`
-- [ ] No API keys in code
-- [ ] Google OAuth configured for production domain
+- [ ] No sensitive data in code
 - [ ] Test all features on live site
 - [ ] Check mobile responsiveness
-- [ ] Test payment flow (if added)
+- [ ] Test ordering flow
 - [ ] Add privacy policy page
 - [ ] Add terms of service page
 

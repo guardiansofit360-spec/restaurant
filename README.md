@@ -19,27 +19,15 @@ A mobile-responsive restaurant website built with React for ordering food online
 
 ## Data Storage
 
-### Firebase Integration (Recommended)
+The application uses MySQL database for persistent data storage:
+- Users and authentication
+- Menu items and categories
+- Orders and order history
+- Promotional offers
+- Inventory management
 
-The app now supports Firebase Firestore for cloud-based data storage:
-- Real-time data synchronization
-- Automatic backups
-- Multi-device support
-- Scalable cloud database
-
-See [FIREBASE_SETUP.md](./FIREBASE_SETUP.md) for complete setup instructions.
-
-### Local Storage (Fallback)
-
-All data is stored in JSON files located in `src/data/`:
-- `menuData.json` - Menu items with prices, categories, and details
-- `ordersData.json` - Customer orders and order history
-- `inventoryData.json` - Stock levels and inventory management
-- `offersData.json` - Promotional offers and discount codes
-- `usersData.json` - User accounts and authentication
-- `categoriesData.json` - Food categories with colors
-
-Data can be persisted using localStorage for demo purposes or migrated to Firebase for production.
+### Backend API
+A Node.js/Express API connects the frontend to MySQL database. See [MYSQL_SETUP.md](./MYSQL_SETUP.md) for setup instructions.
 
 ## Demo Credentials
 
@@ -54,40 +42,34 @@ Data can be persisted using localStorage for demo purposes or migrated to Fireba
 
 ## Installation
 
+### Frontend Setup
 ```bash
 cd restaurant-website
 npm install
 ```
 
-### Firebase Setup (Optional but Recommended)
+### Backend Setup
+```bash
+cd api
+npm install
+```
 
-1. Create a Firebase project at [Firebase Console](https://console.firebase.google.com/)
-2. Enable Firestore Database
-3. Copy your Firebase configuration
-4. Update `src/firebase/config.js` with your credentials
-5. Run the app and use the migration dialog to migrate data
-
-See [FIREBASE_SETUP.md](./FIREBASE_SETUP.md) for detailed instructions.
+See [MYSQL_SETUP.md](./MYSQL_SETUP.md) for complete database setup.
 
 ## Running the App
 
+### Start Backend API (Terminal 1)
+```bash
+cd api
+npm start
+```
+API runs on http://localhost:3001
+
+### Start Frontend (Terminal 2)
 ```bash
 npm start
 ```
-
-The app will open at http://localhost:3000
-
-## Docker Deployment
-
-To run in a container:
-
-```bash
-# Build
-docker build -t restaurant-website .
-
-# Run
-docker run -p 80:80 restaurant-website
-```
+App opens at http://localhost:3000
 
 ## Project Structure
 
@@ -114,50 +96,68 @@ src/
 │       ├── Orders.js      # Order management
 │       ├── Inventory.js   # Menu inventory
 │       └── Offers.js      # Promo offers
-├── firebase/
-│   ├── config.js          # Firebase configuration
-│   └── firebaseService.js # Firebase operations
 ├── utils/
-│   ├── dataManager.js     # LocalStorage utilities
-│   ├── firebaseDataManager.js  # Firebase data managers
-│   └── firebaseMigration.js    # Migration utility
+│   └── dataManager.js     # LocalStorage utilities
 ├── App.js                 # Main app with routing
 └── index.js               # Entry point
 ```
 
 ## Technologies
 
-- React 18
-- React Router v6
+### Frontend
+- React 19
+- React Router v7
 - CSS3 (Mobile-first responsive design)
-- JSON data storage
-- No external UI libraries (lightweight)
+- Lottie animations
+
+### Backend
+- Node.js with Express
+- MySQL database
+- mysql2 (Promise-based MySQL client)
+- CORS enabled
+- RESTful API architecture
 
 ## Data Management
 
-The app uses JSON files for data storage. To modify data:
+The app uses MySQL database for persistent storage:
 
-1. Edit JSON files in `src/data/`
-2. Data is loaded on component mount
-3. Changes are managed in component state
-4. Can be persisted to localStorage or backend API
+1. Backend API handles all database operations
+2. Frontend communicates via REST API
+3. Transaction support for complex operations
+4. Connection pooling for performance
 
-## Firebase Features
+### API Endpoints
 
-The app includes:
-- ✅ Firebase Firestore integration
-- ✅ Automatic data migration from localStorage
-- ✅ Real-time data synchronization
-- ✅ Cloud-based storage
-- ✅ Offline support
+- `/api/users` - User management
+- `/api/orders` - Order processing
+- `/api/menu` - Menu items
+- `/api/categories` - Food categories
+- `/api/offers` - Promotional offers
+
+See [MYSQL_SETUP.md](./MYSQL_SETUP.md) for complete API documentation.
+
+## Deployment
+
+The app can be deployed to Vercel or any static hosting service. See [VERCEL_DEPLOYMENT_GUIDE.md](./VERCEL_DEPLOYMENT_GUIDE.md) for deployment instructions.
+
+## Quick Start
+
+See [QUICKSTART.md](./QUICKSTART.md) for a 5-minute setup guide!
+
+## Documentation
+
+- [QUICKSTART.md](./QUICKSTART.md) - Get started in 5 minutes
+- [MYSQL_SETUP.md](./MYSQL_SETUP.md) - Complete MySQL setup guide
+- [api/README.md](./api/README.md) - Backend API documentation
+- [VERCEL_DEPLOYMENT_GUIDE.md](./VERCEL_DEPLOYMENT_GUIDE.md) - Deploy to production
 
 ## Next Steps
 
 To enhance the app:
-- ✅ Firebase Firestore integration (completed)
-- Add Firebase Authentication (replace custom auth)
-- Add payment gateway integration
-- Real-time order tracking with Firebase
-- Push notifications with Firebase Cloud Messaging
-- Image uploads with Firebase Storage
-- Export/Import data functionality
+- Add payment gateway integration (Stripe/PayPal)
+- Add email notifications
+- Add SMS notifications
+- Implement real-time order tracking
+- Add customer reviews and ratings
+- Multi-language support
+- Mobile app version

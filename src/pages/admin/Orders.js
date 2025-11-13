@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import './Admin.css';
 import AvatarPopup from '../../components/AvatarPopup';
-import { hybridOrderManager } from '../../utils/hybridDataManager';
+import { orderManager } from '../../utils/dataManager';
 
 const Orders = () => {
   const [orders, setOrders] = useState([]);
@@ -11,10 +11,10 @@ const Orders = () => {
   // Get user from sessionStorage
   const user = JSON.parse(sessionStorage.getItem('currentUser') || '{}');
 
-  // Load orders from hybrid manager on mount and refresh periodically
+  // Load orders from localStorage on mount and refresh periodically
   React.useEffect(() => {
-    const loadOrders = async () => {
-      const loadedOrders = await hybridOrderManager.getAllOrders();
+    const loadOrders = () => {
+      const loadedOrders = orderManager.getAllOrders();
       setOrders(loadedOrders);
     };
 
@@ -39,18 +39,18 @@ const Orders = () => {
     return statusFlow[currentStatus] || null;
   };
 
-  const updateStatus = async (orderId) => {
+  const updateStatus = (orderId) => {
     const order = orders.find(o => o.id === orderId);
     if (!order) return;
     
     const nextStatus = getNextStatus(order.status);
     if (!nextStatus) return;
 
-    // Update using hybrid manager
-    await hybridOrderManager.updateOrderStatus(orderId, nextStatus);
+    // Update order status
+    orderManager.updateOrderStatus(orderId, nextStatus);
     
     // Refresh orders list
-    const updatedOrders = await hybridOrderManager.getAllOrders();
+    const updatedOrders = orderManager.getAllOrders();
     setOrders(updatedOrders);
   };
 

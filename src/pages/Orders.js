@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import './Orders.css';
 import AvatarPopup from '../components/AvatarPopup';
-import { hybridOrderManager } from '../utils/hybridDataManager';
+import { orderManager } from '../utils/dataManager';
 
 const Orders = ({ user, cart = [] }) => {
   const navigate = useNavigate();
@@ -16,12 +16,9 @@ const Orders = ({ user, cart = [] }) => {
       return;
     }
 
-    // Load orders using hybrid manager
-    const loadOrders = async () => {
-      const userOrders = await hybridOrderManager.getUserOrders(user.id);
-      setOrders(userOrders);
-    };
-    loadOrders();
+    // Load orders from localStorage
+    const userOrders = orderManager.getUserOrders(user.id);
+    setOrders(userOrders);
   }, [user, navigate]);
 
   const handleReorder = (order) => {

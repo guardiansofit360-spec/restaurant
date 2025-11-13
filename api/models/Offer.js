@@ -1,54 +1,49 @@
-const { getDB, COLLECTIONS } = require('../config/database');
+const { pool } = require('../config/database');
 
-class OfferModel {
-  static async getCollection() {
-    const db = await getDB();
-    return db.collection(COLLECTIONS.OFFERS);
-  }
-
+class Offer {
   static async findAll() {
-    const collection = await this.getCollection();
-    return await collection.find({}).toArray();
+    const [rows] = await pool.query('SELECT * FROM offers ORDER BY created_at DESC');
+    return rows;
   }
 
   static async findActive() {
-    const collection = await this.getCollection();
-    return await collection.find({ active: true }).toArray();
+    const [rows] = await pool.query(`
+      SELECT * FROM offers 
+      WHERE active = TRUE 
+      AND (valid_from IS NULL OR valid_from <= CURDATE())
+      AND (valid_until IS NULL OR valid_until >= CURDATE())
+      ORDER BY created_at DESC
+    `);
+    return rows;
   }
 
-  static async findById(offerId) {
-    const collection = await this.getCollection();
-    return await collection.findOne({ id: parseInt(offerId) });
+  static async findById(id) {
+    const [rows] = await pool.query('SELECT * FROM offers WHERE id = ?', [id]);
+    return rows[0];
   }
 
   static async create(offerData) {
-    const collection = await this.getCollection();
-    const newOffer = {
-      ...offerData,
-      id: offerData.id || Date.now(),
-      createdAt: new Date(),
-      updatedAt: new Date()
-    };
-    
-    await collection.insertOne(newOffer);
-    return newOffer;
-  }
-
-  static async update(offerId, updateData) {
-    const collection = await this.getCollection();
-    const result = await collection.findOneAndUpdate(
-      { id: parseInt(offerId) },
-      { $set: { ...updateData, updatedAt: new Date() } },
-      { returnDocument: 'after' }
+    const { title, description, discountPercentage, code, validFrom, validUntil } = offerData;
+    const [result] = await pool.query(
+      'INSERT INTO offers (title, description, discount_percentage, code, valid_from, valid_until) VALUES (?, ?, ?, ?, ?, ?)',
+      [title, description, discountPercentage, code, validFrom, validUntil]
     );
-    return result;
+    return this.findById(result.insertId);
   }
 
-  static async delete(offerId) {
-    const collection = await this.getCollection();
-    const result = await collection.deleteOne({ id: parseInt(offerId) });
-    return result.deletedCount > 0;
+  static async update(id, offerData) {
+    const { title, description, discountPercentage, code, validFrom, validUntil, active } = offerData;
+    await pool.query(
+      'UPDATE offers SET title = ?, description = ?, discount_percentage = ?, code = ?, valid_from = ?, valid_until = ?, active = ? WHERE id = ?',
+      [title, description, discountPercentage, code, validFrom, validUntil, active, id]
+    );
+    return this.findById(id);
+  }
+
+  static async delete(id) {
+    await pool.query('DELETE FROM offers WHERE id = ?', [id]);
+    return true;
   }
 }
 
-module.exports = OfferModel;
+module.exports = Offer;

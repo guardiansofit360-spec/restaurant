@@ -1,179 +1,90 @@
-# Restaurant API - MongoDB Backend
+# Restaurant API - MySQL Backend
 
-Node.js backend API with MongoDB database integration.
-
-## Features
-
-- ✅ RESTful API endpoints
-- ✅ MongoDB database storage
-- ✅ CORS enabled
-- ✅ Real-time data sync
-- ✅ Data migration from JSON
-- ✅ Cloud-ready (MongoDB Atlas)
+Node.js REST API with MySQL database for the restaurant application.
 
 ## Quick Start
 
 ### 1. Install Dependencies
-
 ```bash
 cd api
 npm install
 ```
 
-### 2. Setup MongoDB
-
-**Option A: MongoDB Atlas (Cloud - Recommended)**
-- See [MONGODB_QUICKSTART.md](../MONGODB_QUICKSTART.md)
-
-**Option B: Local MongoDB**
-- Install MongoDB locally
-- It will run on `mongodb://localhost:27017`
-
-### 3. Configure Environment
-
-Create `api/.env`:
+### 2. Configure Database
+Update `api/.env` with your MySQL credentials:
 ```env
-MONGODB_URI=mongodb://localhost:27017
-# Or for Atlas: mongodb+srv://username:password@cluster0.xxxxx.mongodb.net/
+DB_HOST=localhost
+DB_USER=root
+DB_PASSWORD=your_password
 DB_NAME=restaurant_db
-PORT=3001
 ```
 
-### 4. Migrate Data
-
+### 3. Run Migration
 ```bash
-npm run migrate
+node scripts/migrate.js
 ```
 
-### 5. Start Server
-
+### 4. Start Server
 ```bash
 npm start
 ```
 
 API runs on `http://localhost:3001`
 
-## API Endpoints
+## Features
 
-### Orders
-- `GET /api/orders` - Get all orders
-- `GET /api/orders/user/:userId` - Get user orders
-- `GET /api/orders/stats/active` - Get active orders count
-- `POST /api/orders` - Create order
-- `PATCH /api/orders/:orderId` - Update order
+- ✅ RESTful API endpoints
+- ✅ MySQL database with connection pooling
+- ✅ CORS enabled
+- ✅ Transaction support for orders
+- ✅ Sample data migration
+- ✅ Error handling
 
-### Users
-- `GET /api/users` - Get all users
-- `GET /api/users/:userId` - Get user by ID
-- `POST /api/users` - Create user
-- `PATCH /api/users/:userId` - Update user
+## Tech Stack
 
-### Inventory
-- `GET /api/inventory` - Get all inventory
-- `GET /api/inventory/:itemId` - Get item by ID
-- `POST /api/inventory` - Create item
-- `PATCH /api/inventory/:itemId` - Update item
-
-### Offers
-- `GET /api/offers` - Get all offers
-- `GET /api/offers/active` - Get active offers
-- `POST /api/offers` - Create offer
-- `PATCH /api/offers/:offerId` - Update offer
-
-### Health
-- `GET /api/health` - Health check
-
-## Database Collections
-
-- `orders` - Customer orders
-- `users` - User accounts
-- `inventory` - Restaurant inventory
-- `offers` - Special offers
-- `menu` - Menu items
-- `categories` - Menu categories
-
-## Scripts
-
-- `npm start` - Start server
-- `npm run dev` - Start with auto-reload
-- `npm run migrate` - Migrate JSON to MongoDB
+- Express.js - Web framework
+- MySQL2 - MySQL client with Promise support
+- CORS - Cross-origin resource sharing
+- dotenv - Environment configuration
 
 ## Project Structure
 
 ```
 api/
 ├── config/
-│   └── database.js       # MongoDB connection
+│   ├── database.js      # MySQL connection pool
+│   └── schema.sql       # Database schema
 ├── models/
-│   ├── Order.js          # Order operations
-│   ├── User.js           # User operations
-│   ├── Inventory.js      # Inventory operations
-│   └── Offer.js          # Offer operations
+│   ├── User.js          # User model
+│   ├── Order.js         # Order model
+│   ├── MenuItem.js      # Menu item model
+│   ├── Category.js      # Category model
+│   └── Offer.js         # Offer model
 ├── scripts/
-│   └── migrateData.js    # Data migration
-├── server.js             # Main server
+│   └── migrate.js       # Database migration
+├── server.js            # Express server
 ├── package.json
-└── .env                  # Config (not in git)
+└── .env                 # Environment variables
 ```
 
-## Running Full Stack
+## Scripts
 
-### Terminal 1 - Backend:
-```bash
-cd api
-npm start
-```
+- `npm start` - Start server
+- `npm run dev` - Start with nodemon (auto-reload)
+- `node scripts/migrate.js` - Run database migration
 
-### Terminal 2 - Frontend:
-```bash
-npm start
-```
+## Environment Variables
 
-## Deployment
-
-### Vercel
-
-1. Add environment variables:
-   ```
-   MONGODB_URI=your_atlas_connection_string
-   DB_NAME=restaurant_db
-   ```
-
-2. Deploy:
-   ```bash
-   vercel --prod
-   ```
-
-### Update Frontend
-
-Update `.env`:
 ```env
-REACT_APP_API_URL=https://your-api.vercel.app/api
+DB_HOST=localhost
+DB_USER=root
+DB_PASSWORD=your_password
+DB_NAME=restaurant_db
+DB_PORT=3306
+PORT=3001
+NODE_ENV=development
 ```
 
-## Documentation
+## API Documentation
 
-- [MongoDB Setup Guide](../MONGODB_SETUP.md) - Full setup instructions
-- [MongoDB Quick Start](../MONGODB_QUICKSTART.md) - Fast setup
-- [API Deployment](../API_DEPLOYMENT.md) - Deployment guide
-
-## Troubleshooting
-
-**Connection Error?**
-- Check MongoDB is running
-- Verify connection string in `.env`
-- Check IP whitelist (Atlas)
-
-**Migration Failed?**
-- Ensure JSON files exist in `../src/data/`
-- Check MongoDB connection
-- Run `npm install`
-
-**Port in Use?**
-- Change PORT in `.env`
-- Kill existing process
-
-## Support
-
-- MongoDB Docs: https://docs.mongodb.com/
-- Express Docs: https://expressjs.com/
+See [MYSQL_SETUP.md](../MYSQL_SETUP.md) for complete API documentation.

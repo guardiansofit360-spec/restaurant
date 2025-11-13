@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import './Auth.css';
-import usersDataJson from '../data/usersData.json';
+import apiService from '../services/apiService';
 
 const Register = () => {
   const [formData, setFormData] = useState({
@@ -23,40 +23,39 @@ const Register = () => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
 
-    // Load existing users from localStorage or use JSON data
-    const storedUsers = localStorage.getItem('restaurant_users');
-    const users = storedUsers ? JSON.parse(storedUsers) : usersDataJson;
+    try {
+      // Create new user via API
+      const newUser = {
+        name: formData.name,
+        email: formData.email,
+        password: formData.password,
+        phone: formData.phone,
+        address: formData.address || '',
+        role: 'customer'
+      };
 
-    // Check if email already exists
-    const existingUser = users.find(u => u.email === formData.email);
-    if (existingUser) {
-      setError('Email already registered. Please login instead.');
-      return;
+      console.log('Sending registration request:', newUser);
+
+      // Call API to create user
+      const response = await apiService.createUser(newUser);
+
+      console.log('Registration response:', response);
+
+      if (response.error) {
+        setError(response.error);
+        return;
+      }
+
+      alert('Registration successful! Please login with your credentials.');
+      navigate('/login');
+    } catch (error) {
+      console.error('Registration error details:', error);
+      setError(`Registration failed: ${error.message || 'Please check if API server is running'}`);
     }
-
-    // Create new user
-    const newUser = {
-      id: Date.now(),
-      name: formData.name,
-      email: formData.email,
-      password: formData.password,
-      phone: formData.phone,
-      address: formData.address || '',
-      role: 'customer'
-    };
-
-    // Add to users array
-    users.push(newUser);
-
-    // Save to localStorage
-    localStorage.setItem('restaurant_users', JSON.stringify(users));
-
-    alert('Registration successful! Please login with your credentials.');
-    navigate('/login');
   };
 
   return (

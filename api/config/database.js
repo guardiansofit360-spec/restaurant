@@ -1,61 +1,29 @@
-const { MongoClient } = require('mongodb');
+const mysql = require('mysql2/promise');
 require('dotenv').config();
 
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017';
-const DB_NAME = process.env.DB_NAME || 'restaurant_db';
+// Create connection pool
+const pool = mysql.createPool({
+  host: process.env.DB_HOST || 'localhost',
+  user: process.env.DB_USER || 'root',
+  password: process.env.DB_PASSWORD || '',
+  database: process.env.DB_NAME || 'restaurant_db',
+  port: process.env.DB_PORT || 3306,
+  waitForConnections: true,
+  connectionLimit: 10,
+  queueLimit: 0
+});
 
-let client = null;
-let db = null;
-
-async function connectDB() {
+// Test connection
+const testConnection = async () => {
   try {
-    if (db) {
-      return db;
-    }
-
-    client = new MongoClient(MONGODB_URI);
-    await client.connect();
-    db = client.db(DB_NAME);
-    
-    console.log('✅ Connected to MongoDB successfully');
-    console.log(`📊 Database: ${DB_NAME}`);
-    
-    return db;
+    const connection = await pool.getConnection();
+    console.log('✅ MySQL Database connected successfully');
+    connection.release();
+    return true;
   } catch (error) {
-    console.error('❌ MongoDB connection error:', error);
-    throw error;
+    console.error('❌ MySQL connection failed:', error.message);
+    return false;
   }
-}
-
-async function getDB() {
-  if (!db) {
-    await connectDB();
-  }
-  return db;
-}
-
-async function closeDB() {
-  if (client) {
-    await client.close();
-    client = null;
-    db = null;
-    console.log('🔌 MongoDB connection closed');
-  }
-}
-
-// Collections
-const COLLECTIONS = {
-  ORDERS: 'orders',
-  USERS: 'users',
-  INVENTORY: 'inventory',
-  OFFERS: 'offers',
-  MENU: 'menu',
-  CATEGORIES: 'categories'
 };
 
-module.exports = {
-  connectDB,
-  getDB,
-  closeDB,
-  COLLECTIONS
-};
+module.exports = { pool, testConnection };

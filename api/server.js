@@ -2,11 +2,12 @@ const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
 
-const { connectDB, closeDB } = require('./config/database');
-const OrderModel = require('./models/Order');
-const UserModel = require('./models/User');
-const InventoryModel = require('./models/Inventory');
-const OfferModel = require('./models/Offer');
+const { testConnection } = require('./config/database');
+const User = require('./models/User');
+const Order = require('./models/Order');
+const MenuItem = require('./models/MenuItem');
+const Category = require('./models/Category');
+const Offer = require('./models/Offer');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -15,248 +16,224 @@ const PORT = process.env.PORT || 3001;
 app.use(cors());
 app.use(express.json());
 
-// Connect to MongoDB on startup
-connectDB().catch(err => {
-  console.error('Failed to connect to MongoDB:', err);
-  process.exit(1);
-});
+// Test database connection on startup
+testConnection();
 
-// ============ ORDERS ENDPOINTS ============
-
-// Get all orders
-app.get('/api/orders', async (req, res) => {
-  try {
-    const orders = await OrderModel.findAll();
-    res.json(orders);
-  } catch (error) {
-    console.error('Error fetching orders:', error);
-    res.status(500).json({ error: 'Failed to fetch orders' });
-  }
-});
-
-// Get orders by user ID
-app.get('/api/orders/user/:userId', async (req, res) => {
-  try {
-    const orders = await OrderModel.findByUserId(req.params.userId);
-    res.json(orders);
-  } catch (error) {
-    console.error('Error fetching user orders:', error);
-    res.status(500).json({ error: 'Failed to fetch user orders' });
-  }
-});
-
-// Create new order
-app.post('/api/orders', async (req, res) => {
-  try {
-    const newOrder = await OrderModel.create(req.body);
-    res.status(201).json(newOrder);
-  } catch (error) {
-    console.error('Error creating order:', error);
-    res.status(500).json({ error: 'Failed to create order' });
-  }
-});
-
-// Update order status
-app.patch('/api/orders/:orderId', async (req, res) => {
-  try {
-    const updatedOrder = await OrderModel.update(req.params.orderId, req.body);
-    
-    if (!updatedOrder) {
-      return res.status(404).json({ error: 'Order not found' });
-    }
-    
-    res.json(updatedOrder);
-  } catch (error) {
-    console.error('Error updating order:', error);
-    res.status(500).json({ error: 'Failed to update order' });
-  }
-});
-
-// Get active orders count
-app.get('/api/orders/stats/active', async (req, res) => {
-  try {
-    const count = await OrderModel.getActiveOrdersCount();
-    res.json({ count });
-  } catch (error) {
-    console.error('Error getting active orders count:', error);
-    res.status(500).json({ error: 'Failed to get active orders count' });
-  }
-});
-
-// ============ USERS ENDPOINTS ============
-
-// Get all users
+// ============ USER ROUTES ============
 app.get('/api/users', async (req, res) => {
   try {
-    const users = await UserModel.findAll();
+    const users = await User.findAll();
     res.json(users);
   } catch (error) {
-    console.error('Error fetching users:', error);
-    res.status(500).json({ error: 'Failed to fetch users' });
+    res.status(500).json({ error: error.message });
   }
 });
 
-// Get user by ID
-app.get('/api/users/:userId', async (req, res) => {
+app.get('/api/users/:id', async (req, res) => {
   try {
-    const user = await UserModel.findById(req.params.userId);
-    if (!user) {
-      return res.status(404).json({ error: 'User not found' });
-    }
+    const user = await User.findById(req.params.id);
+    if (!user) return res.status(404).json({ error: 'User not found' });
     res.json(user);
   } catch (error) {
-    console.error('Error fetching user:', error);
-    res.status(500).json({ error: 'Failed to fetch user' });
+    res.status(500).json({ error: error.message });
   }
 });
 
-// Create new user
 app.post('/api/users', async (req, res) => {
   try {
-    const newUser = await UserModel.create(req.body);
-    res.status(201).json(newUser);
+    const user = await User.create(req.body);
+    res.status(201).json(user);
   } catch (error) {
-    console.error('Error creating user:', error);
-    res.status(500).json({ error: 'Failed to create user' });
+    res.status(500).json({ error: error.message });
   }
 });
 
-// Update user
-app.patch('/api/users/:userId', async (req, res) => {
+app.post('/api/users/login', async (req, res) => {
   try {
-    const updatedUser = await UserModel.update(req.params.userId, req.body);
-    if (!updatedUser) {
-      return res.status(404).json({ error: 'User not found' });
-    }
-    res.json(updatedUser);
+    const { email, password } = req.body;
+    const user = await User.login(email, password);
+    if (!user) return res.status(401).json({ error: 'Invalid credentials' });
+    res.json(user);
   } catch (error) {
-    console.error('Error updating user:', error);
-    res.status(500).json({ error: 'Failed to update user' });
+    res.status(500).json({ error: error.message });
   }
 });
 
-// ============ INVENTORY ENDPOINTS ============
-
-// Get all inventory
-app.get('/api/inventory', async (req, res) => {
+app.patch('/api/users/:id', async (req, res) => {
   try {
-    const inventory = await InventoryModel.findAll();
-    res.json(inventory);
+    const user = await User.update(req.params.id, req.body);
+    res.json(user);
   } catch (error) {
-    console.error('Error fetching inventory:', error);
-    res.status(500).json({ error: 'Failed to fetch inventory' });
+    res.status(500).json({ error: error.message });
   }
 });
 
-// Get inventory item by ID
-app.get('/api/inventory/:itemId', async (req, res) => {
+// ============ ORDER ROUTES ============
+app.get('/api/orders', async (req, res) => {
   try {
-    const item = await InventoryModel.findById(req.params.itemId);
-    if (!item) {
-      return res.status(404).json({ error: 'Item not found' });
-    }
+    const orders = await Order.findAll();
+    res.json(orders);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get('/api/orders/user/:userId', async (req, res) => {
+  try {
+    const orders = await Order.findByUserId(req.params.userId);
+    res.json(orders);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get('/api/orders/stats/active', async (req, res) => {
+  try {
+    const count = await Order.getActiveCount();
+    res.json({ count });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/orders', async (req, res) => {
+  try {
+    const order = await Order.create(req.body);
+    res.status(201).json(order);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.patch('/api/orders/:id', async (req, res) => {
+  try {
+    const { status } = req.body;
+    const order = await Order.updateStatus(req.params.id, status);
+    res.json(order);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ============ MENU ITEM ROUTES ============
+app.get('/api/menu', async (req, res) => {
+  try {
+    const items = await MenuItem.findAll();
+    res.json(items);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get('/api/menu/:id', async (req, res) => {
+  try {
+    const item = await MenuItem.findById(req.params.id);
+    if (!item) return res.status(404).json({ error: 'Item not found' });
     res.json(item);
   } catch (error) {
-    console.error('Error fetching inventory item:', error);
-    res.status(500).json({ error: 'Failed to fetch inventory item' });
+    res.status(500).json({ error: error.message });
   }
 });
 
-// Create inventory item
-app.post('/api/inventory', async (req, res) => {
+app.post('/api/menu', async (req, res) => {
   try {
-    const newItem = await InventoryModel.create(req.body);
-    res.status(201).json(newItem);
+    const item = await MenuItem.create(req.body);
+    res.status(201).json(item);
   } catch (error) {
-    console.error('Error creating inventory item:', error);
-    res.status(500).json({ error: 'Failed to create inventory item' });
+    res.status(500).json({ error: error.message });
   }
 });
 
-// Update inventory item
-app.patch('/api/inventory/:itemId', async (req, res) => {
+app.patch('/api/menu/:id', async (req, res) => {
   try {
-    const updatedItem = await InventoryModel.update(req.params.itemId, req.body);
-    if (!updatedItem) {
-      return res.status(404).json({ error: 'Item not found' });
-    }
-    res.json(updatedItem);
+    const item = await MenuItem.update(req.params.id, req.body);
+    res.json(item);
   } catch (error) {
-    console.error('Error updating inventory:', error);
-    res.status(500).json({ error: 'Failed to update inventory' });
+    res.status(500).json({ error: error.message });
   }
 });
 
-// ============ OFFERS ENDPOINTS ============
+app.delete('/api/menu/:id', async (req, res) => {
+  try {
+    await MenuItem.delete(req.params.id);
+    res.json({ message: 'Item deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
 
-// Get all offers
+// ============ CATEGORY ROUTES ============
+app.get('/api/categories', async (req, res) => {
+  try {
+    const categories = await Category.findAll();
+    res.json(categories);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/categories', async (req, res) => {
+  try {
+    const category = await Category.create(req.body);
+    res.status(201).json(category);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ============ OFFER ROUTES ============
 app.get('/api/offers', async (req, res) => {
   try {
-    const offers = await OfferModel.findAll();
+    const offers = await Offer.findAll();
     res.json(offers);
   } catch (error) {
-    console.error('Error fetching offers:', error);
-    res.status(500).json({ error: 'Failed to fetch offers' });
+    res.status(500).json({ error: error.message });
   }
 });
 
-// Get active offers
 app.get('/api/offers/active', async (req, res) => {
   try {
-    const offers = await OfferModel.findActive();
+    const offers = await Offer.findActive();
     res.json(offers);
   } catch (error) {
-    console.error('Error fetching active offers:', error);
-    res.status(500).json({ error: 'Failed to fetch active offers' });
+    res.status(500).json({ error: error.message });
   }
 });
 
-// Create offer
 app.post('/api/offers', async (req, res) => {
   try {
-    const newOffer = await OfferModel.create(req.body);
-    res.status(201).json(newOffer);
+    const offer = await Offer.create(req.body);
+    res.status(201).json(offer);
   } catch (error) {
-    console.error('Error creating offer:', error);
-    res.status(500).json({ error: 'Failed to create offer' });
+    res.status(500).json({ error: error.message });
   }
 });
 
-// Update offer
-app.patch('/api/offers/:offerId', async (req, res) => {
+app.patch('/api/offers/:id', async (req, res) => {
   try {
-    const updatedOffer = await OfferModel.update(req.params.offerId, req.body);
-    if (!updatedOffer) {
-      return res.status(404).json({ error: 'Offer not found' });
-    }
-    res.json(updatedOffer);
+    const offer = await Offer.update(req.params.id, req.body);
+    res.json(offer);
   } catch (error) {
-    console.error('Error updating offer:', error);
-    res.status(500).json({ error: 'Failed to update offer' });
+    res.status(500).json({ error: error.message });
   }
 });
 
-// Health check
+app.delete('/api/offers/:id', async (req, res) => {
+  try {
+    await Offer.delete(req.params.id);
+    res.json({ message: 'Offer deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ============ HEALTH CHECK ============
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'OK', message: 'Restaurant API is running' });
-});
-
-// Graceful shutdown
-process.on('SIGINT', async () => {
-  console.log('\n� Shutrting down gracefully...');
-  await closeDB();
-  process.exit(0);
-});
-
-process.on('SIGTERM', async () => {
-  console.log('\n🛑 Shutting down gracefully...');
-  await closeDB();
-  process.exit(0);
+  res.json({ status: 'OK', message: 'Restaurant API with MySQL is running' });
 });
 
 // Start server
 app.listen(PORT, () => {
-  console.log(`🚀 Restaurant API server running on http://localhost:${PORT}`);
-  console.log(`🔗 MongoDB connection established`);
+  console.log(`🚀 Server running on http://localhost:${PORT}`);
   console.log(`📡 API endpoints available at /api/*`);
 });
