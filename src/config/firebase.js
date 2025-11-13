@@ -13,13 +13,28 @@ const firebaseConfig = {
 };
 
 // Initialize Firebase
-const app = initializeApp(firebaseConfig);
+let app;
+let auth;
+let googleProvider;
+let db;
 
-// Initialize Firebase Authentication
-export const auth = getAuth(app);
-export const googleProvider = new GoogleAuthProvider();
+try {
+  app = initializeApp(firebaseConfig);
+  
+  // Initialize Firebase Authentication
+  auth = getAuth(app);
+  googleProvider = new GoogleAuthProvider();
+  
+  // Initialize Firestore Database (optional)
+  try {
+    db = getFirestore(app);
+  } catch (firestoreError) {
+    console.log('Firestore not enabled yet');
+    db = null;
+  }
+} catch (error) {
+  console.error('Firebase initialization error:', error);
+}
 
-// Initialize Firestore Database
-export const db = getFirestore(app);
-
+export { auth, googleProvider, db };
 export default app;
