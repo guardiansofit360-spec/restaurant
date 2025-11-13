@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import './Orders.css';
 import AvatarPopup from '../components/AvatarPopup';
 import { orderManager } from '../utils/dataManager';
+import apiService from '../services/apiService';
 
 const Orders = ({ user, cart = [] }) => {
   const navigate = useNavigate();
@@ -16,9 +17,39 @@ const Orders = ({ user, cart = [] }) => {
       return;
     }
 
-    // Load orders from localStorage
-    const userOrders = orderManager.getUserOrders(user.id);
-    setOrders(userOrders);
+    // Load orders from API or localStorage
+    const loadOrders = async () => {
+      try {
+        // Try to load from API first
+        const apiOrders = await apiService.getUserOrders(user.id);
+        if (apiOrders && !apiOrders.error) {
+          // Format API orders to match expected structure
+          const formattedOrders = apiOrders.map(order => ({
+            id: order.id,
+            userId: order.user_id,
+            customerName: user.name,
+            customerEmail: user.email,
+            items: typeof order.items === 'string' ? JSON.parse(order.items) : order.items,
+            total: parseFloat(order.total),
+            status: order.status || 'Pending',
+            date: new Date(order.created_at).toISOString().split('T')[0],
+            time: new Date(order.created_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }),
+            timestamp: order.created_at,
+            address: order.delivery_address || 'Not provided'
+          }));
+          setOrders(formattedOrders);
+          return;
+        }
+      } catch (error) {
+        console.log('API not available, using localStorage:', error);
+      }
+      
+      // Fallback to localStorage
+      const userOrders = orderManager.getUserOrders(user.id);
+      setOrders(userOrders);
+    };
+
+    loadOrders();
   }, [user, navigate]);
 
   const handleReorder = (order) => {

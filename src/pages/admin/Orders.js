@@ -3,19 +3,49 @@ import { Link } from 'react-router-dom';
 import './Admin.css';
 import AvatarPopup from '../../components/AvatarPopup';
 import { orderManager } from '../../utils/dataManager';
+import apiService from '../../services/apiService';
 
 const Orders = () => {
   const [orders, setOrders] = useState([]);
   const [showAvatarPopup, setShowAvatarPopup] = useState(false);
+  const [useApi, setUseApi] = useState(true);
   
   // Get user from sessionStorage
   const user = JSON.parse(sessionStorage.getItem('currentUser') || '{}');
 
-  // Load orders from localStorage on mount and refresh periodically
+  // Load orders from API or localStorage on mount and refresh periodically
   React.useEffect(() => {
-    const loadOrders = () => {
+    const loadOrders = async () => {
+      try {
+        // Try to load from API first
+        const apiOrders = await apiService.getAllOrders();
+        if (apiOrders && !apiOrders.error) {
+          // Format API orders to match expected structure
+          const formattedOrders = apiOrders.map(order => ({
+            id: order.id,
+            userId: order.user_id,
+            customerName: order.customer_name || 'Customer',
+            customerEmail: order.customer_email || '',
+            items: typeof order.items === 'string' ? JSON.parse(order.items) : order.items,
+            total: parseFloat(order.total),
+            status: order.status || 'Pending',
+            date: new Date(order.created_at).toISOString().split('T')[0],
+            time: new Date(order.created_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }),
+            timestamp: order.created_at,
+            address: order.delivery_address || 'Not provided'
+          }));
+          setOrders(formattedOrders);
+          setUseApi(true);
+          return;
+        }
+      } catch (error) {
+        console.log('API not available, using localStorage:', error);
+      }
+      
+      // Fallback to localStorage
       const loadedOrders = orderManager.getAllOrders();
       setOrders(loadedOrders);
+      setUseApi(false);
     };
 
     // Initial load
@@ -39,15 +69,26 @@ const Orders = () => {
     return statusFlow[currentStatus] || null;
   };
 
-  const updateStatus = (orderId) => {
+  const updateStatus = async (orderId) => {
     const order = orders.find(o => o.id === orderId);
     if (!order) return;
     
     const nextStatus = getNextStatus(order.status);
     if (!nextStatus) return;
 
-    // Update order status
-    orderManager.updateOrderStatus(orderId, nextStatus);
+    try {
+      if (useApi) {
+        // Update via API
+        await apiService.updateOrderStatus(orderId, nextStatus);
+      } else {
+        // Fallback to localStorage
+        orderManager.updateOrderStatus(orderId, nextStatus);
+      }
+    } catch (error) {
+      console.error('Error updating order status:', error);
+      // Fallback to localStorage
+      orderManager.updateOrderStatus(orderId, nextStatus);
+    }
     
     // Refresh orders list
     const updatedOrders = orderManager.getAllOrders();

@@ -57,47 +57,66 @@ const Cart = ({ cart, updateQuantity, removeFromCart, clearCart, user }) => {
 
   const handleCheckout = async () => {
     if (cart.length > 0 && user) {
-      // Create new order with timestamp
-      const orderDate = new Date();
-      const newOrder = {
-        id: Date.now(),
-        userId: user.id,
-        customerName: user.name,
-        customerEmail: user.email,
-        items: cart.map(item => ({
-          id: item.id,
-          name: item.name,
-          price: item.price,
-          quantity: item.quantity,
-          image: item.image
-        })),
-        subtotal: total,
-        deliveryFee: 5.00,
-        total: total + 5.00,
-        status: 'Pending',
-        date: orderDate.toISOString().split('T')[0],
-        time: orderDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }),
-        timestamp: orderDate.toISOString(),
-        address: user.address || 'Not provided'
-      };
+      try {
+        // Create new order with timestamp
+        const orderDate = new Date();
+        const orderData = {
+          userId: user.id,
+          items: cart.map(item => ({
+            id: item.id,
+            name: item.name,
+            price: item.price,
+            quantity: item.quantity,
+            image: item.image
+          })),
+          total: total + 5.00, // Include delivery fee
+          deliveryAddress: user.address || 'Not provided',
+          paymentMethod: 'Cash on Delivery'
+        };
 
-      // Save order to localStorage
-      orderManager.createOrder(newOrder);
+        // Try to save order to API (database)
+        try {
+          const apiService = require('../services/apiService').default;
+          await apiService.createOrder(orderData);
+        } catch (apiError) {
+          console.log('API not available, saving locally:', apiError);
+          // Fallback to localStorage if API is not available
+          const newOrder = {
+            id: Date.now(),
+            userId: user.id,
+            customerName: user.name,
+            customerEmail: user.email,
+            items: orderData.items,
+            subtotal: total,
+            deliveryFee: 5.00,
+            total: orderData.total,
+            status: 'Pending',
+            date: orderDate.toISOString().split('T')[0],
+            time: orderDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }),
+            timestamp: orderDate.toISOString(),
+            address: orderData.deliveryAddress
+          };
+          orderManager.createOrder(newOrder);
+        }
 
-      // Update active orders count
-      const userOrders = orderManager.getUserOrders(user.id);
-      const activeOrders = userOrders.filter(order => 
-        order.status.toLowerCase() !== 'delivered' && order.status.toLowerCase() !== 'completed'
-      );
-      setActiveOrdersCount(activeOrders.length);
+        // Update active orders count
+        const userOrders = orderManager.getUserOrders(user.id);
+        const activeOrders = userOrders.filter(order => 
+          order.status.toLowerCase() !== 'delivered' && order.status.toLowerCase() !== 'completed'
+        );
+        setActiveOrdersCount(activeOrders.length);
 
-      // Play success sound
-      playSuccessSound();
+        // Play success sound
+        playSuccessSound();
 
-      // Clear cart and show success message
-      clearCart();
-      setOrderPlaced(true);
-      // Don't auto-hide - let user navigate away naturally
+        // Clear cart and show success message
+        clearCart();
+        setOrderPlaced(true);
+        // Don't auto-hide - let user navigate away naturally
+      } catch (error) {
+        console.error('Checkout error:', error);
+        alert('Failed to place order. Please try again.');
+      }
     }
   };
 
