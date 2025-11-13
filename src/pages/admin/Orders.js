@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import './Admin.css';
 import AvatarPopup from '../../components/AvatarPopup';
-import { orderManager } from '../../utils/dataManager';
+import { hybridOrderManager } from '../../utils/hybridDataManager';
 
 const Orders = () => {
   const [orders, setOrders] = useState([]);
@@ -11,10 +11,10 @@ const Orders = () => {
   // Get user from sessionStorage
   const user = JSON.parse(sessionStorage.getItem('currentUser') || '{}');
 
-  // Load orders from dataManager on mount and refresh periodically
+  // Load orders from hybrid manager on mount and refresh periodically
   React.useEffect(() => {
-    const loadOrders = () => {
-      const loadedOrders = orderManager.getAllOrders();
+    const loadOrders = async () => {
+      const loadedOrders = await hybridOrderManager.getAllOrders();
       setOrders(loadedOrders);
     };
 
@@ -39,18 +39,18 @@ const Orders = () => {
     return statusFlow[currentStatus] || null;
   };
 
-  const updateStatus = (orderId) => {
+  const updateStatus = async (orderId) => {
     const order = orders.find(o => o.id === orderId);
     if (!order) return;
     
     const nextStatus = getNextStatus(order.status);
     if (!nextStatus) return;
 
-    // Update using dataManager
-    orderManager.updateOrderStatus(orderId, nextStatus);
+    // Update using hybrid manager
+    await hybridOrderManager.updateOrderStatus(orderId, nextStatus);
     
     // Refresh orders list
-    const updatedOrders = orderManager.getAllOrders();
+    const updatedOrders = await hybridOrderManager.getAllOrders();
     setOrders(updatedOrders);
   };
 
@@ -236,10 +236,13 @@ const Orders = () => {
             <path d="M9 11L12 14L22 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
             <path d="M21 12V19C21 19.5304 20.7893 20.0391 20.4142 20.4142C20.0391 20.7893 19.5304 21 19 21H5C4.46957 21 3.96086 20.7893 3.58579 20.4142C3.21071 20.0391 3 19.5304 3 19V5C3 4.46957 3.21071 3.96086 3.58579 3.58579C3.96086 3.21071 4.46957 3 5 3H16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
-          {(() => {
-            const activeCount = orderManager.getActiveOrdersCount();
-            return activeCount > 0 ? <span className="orders-count-badge">{activeCount}</span> : null;
-          })()}
+          {orders.filter(order => {
+            const status = order.status.toLowerCase();
+            return status !== 'delivered' && status !== 'completed';
+          }).length > 0 && <span className="orders-count-badge">{orders.filter(order => {
+            const status = order.status.toLowerCase();
+            return status !== 'delivered' && status !== 'completed';
+          }).length}</span>}
           <span className="nav-label">Orders</span>
         </Link>
         <Link to="/admin/inventory" className="nav-item">

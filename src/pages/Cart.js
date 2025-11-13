@@ -5,7 +5,7 @@ import './Cart.css';
 import AvatarPopup from '../components/AvatarPopup';
 import orderCompleteAnimation from '../img/Order completed.json';
 import notFoundAnimation from '../img/Not Found.json';
-import { orderManager } from '../utils/dataManager';
+import { hybridOrderManager } from '../utils/hybridDataManager';
 
 const Cart = ({ cart, updateQuantity, removeFromCart, clearCart, user }) => {
   const [orderPlaced, setOrderPlaced] = useState(false);
@@ -17,13 +17,16 @@ const Cart = ({ cart, updateQuantity, removeFromCart, clearCart, user }) => {
 
   // Get active orders count
   useEffect(() => {
-    if (user) {
-      const userOrders = orderManager.getUserOrders(user.id);
-      const activeOrders = userOrders.filter(order => 
-        order.status.toLowerCase() !== 'delivered' && order.status.toLowerCase() !== 'completed'
-      );
-      setActiveOrdersCount(activeOrders.length);
-    }
+    const loadActiveOrders = async () => {
+      if (user) {
+        const userOrders = await hybridOrderManager.getUserOrders(user.id);
+        const activeOrders = userOrders.filter(order => 
+          order.status.toLowerCase() !== 'delivered' && order.status.toLowerCase() !== 'completed'
+        );
+        setActiveOrdersCount(activeOrders.length);
+      }
+    };
+    loadActiveOrders();
   }, [user]);
 
   const playSuccessSound = () => {
@@ -55,7 +58,7 @@ const Cart = ({ cart, updateQuantity, removeFromCart, clearCart, user }) => {
     oscillator2.stop(audioContext.currentTime + 0.5);
   };
 
-  const handleCheckout = () => {
+  const handleCheckout = async () => {
     if (cart.length > 0 && user) {
       // Create new order with timestamp
       const orderDate = new Date();
@@ -81,11 +84,11 @@ const Cart = ({ cart, updateQuantity, removeFromCart, clearCart, user }) => {
         address: user.address || 'Not provided'
       };
 
-      // Save order using dataManager
-      orderManager.createOrder(newOrder);
+      // Save order using hybrid manager
+      await hybridOrderManager.createOrder(newOrder);
 
       // Update active orders count
-      const userOrders = orderManager.getUserOrders(user.id);
+      const userOrders = await hybridOrderManager.getUserOrders(user.id);
       const activeOrders = userOrders.filter(order => 
         order.status.toLowerCase() !== 'delivered' && order.status.toLowerCase() !== 'completed'
       );
