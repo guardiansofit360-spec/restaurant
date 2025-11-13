@@ -11,10 +11,20 @@ const Orders = () => {
   // Get user from sessionStorage
   const user = JSON.parse(sessionStorage.getItem('currentUser') || '{}');
 
-  // Load orders from dataManager on mount
+  // Load orders from dataManager on mount and refresh periodically
   React.useEffect(() => {
-    const loadedOrders = orderManager.getAllOrders();
-    setOrders(loadedOrders);
+    const loadOrders = () => {
+      const loadedOrders = orderManager.getAllOrders();
+      setOrders(loadedOrders);
+    };
+
+    // Initial load
+    loadOrders();
+
+    // Refresh orders every 5 seconds to catch new orders
+    const interval = setInterval(loadOrders, 5000);
+
+    return () => clearInterval(interval);
   }, []);
 
   const getNextStatus = (currentStatus) => {

@@ -7,15 +7,15 @@ import inventoryData from '../data/inventoryData.json';
 import offersData from '../data/offersData.json';
 import categoriesData from '../data/categoriesData.json';
 
-// Load orders from sessionStorage or JSON
+// Load orders from localStorage or JSON
 const loadOrders = () => {
-  const stored = sessionStorage.getItem('restaurant_orders');
+  const stored = localStorage.getItem('restaurant_orders');
   return stored ? JSON.parse(stored) : [...ordersData];
 };
 
-// Save orders to sessionStorage
+// Save orders to localStorage
 const saveOrders = (orders) => {
-  sessionStorage.setItem('restaurant_orders', JSON.stringify(orders));
+  localStorage.setItem('restaurant_orders', JSON.stringify(orders));
 };
 
 // In-memory data store (simulates database)
