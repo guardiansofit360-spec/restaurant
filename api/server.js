@@ -12,8 +12,15 @@ const Offer = require('./models/Offer');
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+// CORS configuration for production
+const corsOptions = {
+  origin: process.env.FRONTEND_URL || '*',
+  credentials: true,
+  optionsSuccessStatus: 200
+};
+
 // Middleware
-app.use(cors());
+app.use(cors(corsOptions));
 app.use(express.json());
 
 // Test database connection on startup

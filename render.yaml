@@ -1,0 +1,31 @@
+services:
+  - type: web
+    name: restaurant-api
+    env: node
+    region: oregon
+    plan: free
+    buildCommand: cd api && npm install
+    startCommand: cd api && node server.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3001
+      - key: DB_HOST
+        sync: false
+      - key: DB_USER
+        sync: false
+      - key: DB_PASSWORD
+        sync: false
+      - key: DB_NAME
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: FRONTEND_URL
+        sync: false
+
+databases:
+  - name: restaurant-db
+    databaseName: restaurant_db
+    user: restaurant_user
+    plan: free
