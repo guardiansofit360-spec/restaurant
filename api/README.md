@@ -1,16 +1,17 @@
-# Restaurant API - Node.js Backend
+# Restaurant API - MongoDB Backend
 
-Simple Node.js backend API that stores data in JSON files.
+Node.js backend API with MongoDB database integration.
 
 ## Features
 
 - ✅ RESTful API endpoints
-- ✅ JSON file storage
+- ✅ MongoDB database storage
 - ✅ CORS enabled
-- ✅ Real-time data sync across users
-- ✅ No database required
+- ✅ Real-time data sync
+- ✅ Data migration from JSON
+- ✅ Cloud-ready (MongoDB Atlas)
 
-## Setup
+## Quick Start
 
 ### 1. Install Dependencies
 
@@ -19,131 +20,160 @@ cd api
 npm install
 ```
 
-### 2. Start the Server
+### 2. Setup MongoDB
+
+**Option A: MongoDB Atlas (Cloud - Recommended)**
+- See [MONGODB_QUICKSTART.md](../MONGODB_QUICKSTART.md)
+
+**Option B: Local MongoDB**
+- Install MongoDB locally
+- It will run on `mongodb://localhost:27017`
+
+### 3. Configure Environment
+
+Create `api/.env`:
+```env
+MONGODB_URI=mongodb://localhost:27017
+# Or for Atlas: mongodb+srv://username:password@cluster0.xxxxx.mongodb.net/
+DB_NAME=restaurant_db
+PORT=3001
+```
+
+### 4. Migrate Data
+
+```bash
+npm run migrate
+```
+
+### 5. Start Server
 
 ```bash
 npm start
 ```
 
-Or for development with auto-reload:
-
-```bash
-npm run dev
-```
-
-The API will run on `http://localhost:3001`
+API runs on `http://localhost:3001`
 
 ## API Endpoints
 
 ### Orders
-
 - `GET /api/orders` - Get all orders
-- `GET /api/orders/user/:userId` - Get orders for specific user
-- `POST /api/orders` - Create new order
-- `PATCH /api/orders/:orderId` - Update order status
+- `GET /api/orders/user/:userId` - Get user orders
+- `GET /api/orders/stats/active` - Get active orders count
+- `POST /api/orders` - Create order
+- `PATCH /api/orders/:orderId` - Update order
 
 ### Users
-
 - `GET /api/users` - Get all users
-- `POST /api/users` - Create new user
+- `GET /api/users/:userId` - Get user by ID
+- `POST /api/users` - Create user
+- `PATCH /api/users/:userId` - Update user
 
 ### Inventory
-
-- `GET /api/inventory` - Get all inventory items
-- `PATCH /api/inventory/:itemId` - Update inventory item
+- `GET /api/inventory` - Get all inventory
+- `GET /api/inventory/:itemId` - Get item by ID
+- `POST /api/inventory` - Create item
+- `PATCH /api/inventory/:itemId` - Update item
 
 ### Offers
-
 - `GET /api/offers` - Get all offers
+- `GET /api/offers/active` - Get active offers
+- `POST /api/offers` - Create offer
+- `PATCH /api/offers/:offerId` - Update offer
 
-### Health Check
+### Health
+- `GET /api/health` - Health check
 
-- `GET /api/health` - Check if API is running
+## Database Collections
 
-## How It Works
+- `orders` - Customer orders
+- `users` - User accounts
+- `inventory` - Restaurant inventory
+- `offers` - Special offers
+- `menu` - Menu items
+- `categories` - Menu categories
 
-1. **Data Storage**: All data is stored in JSON files in `src/data/`
-2. **Read Operations**: API reads from JSON files
-3. **Write Operations**: API writes to JSON files
-4. **Sync**: All users see the same data because it's stored on the server
+## Scripts
 
-## Running Both Frontend and Backend
+- `npm start` - Start server
+- `npm run dev` - Start with auto-reload
+- `npm run migrate` - Migrate JSON to MongoDB
 
-### Terminal 1 - Backend API:
+## Project Structure
+
+```
+api/
+├── config/
+│   └── database.js       # MongoDB connection
+├── models/
+│   ├── Order.js          # Order operations
+│   ├── User.js           # User operations
+│   ├── Inventory.js      # Inventory operations
+│   └── Offer.js          # Offer operations
+├── scripts/
+│   └── migrateData.js    # Data migration
+├── server.js             # Main server
+├── package.json
+└── .env                  # Config (not in git)
+```
+
+## Running Full Stack
+
+### Terminal 1 - Backend:
 ```bash
 cd api
 npm start
 ```
 
-### Terminal 2 - Frontend React App:
+### Terminal 2 - Frontend:
 ```bash
 npm start
-```
-
-## Environment Variables
-
-Add to your `.env` file:
-
-```
-REACT_APP_API_URL=http://localhost:3001/api
 ```
 
 ## Deployment
 
-### Option 1: Deploy to Vercel (Serverless Functions)
+### Vercel
 
-The API can be deployed as Vercel serverless functions. See `VERCEL_API_DEPLOYMENT.md` for details.
+1. Add environment variables:
+   ```
+   MONGODB_URI=your_atlas_connection_string
+   DB_NAME=restaurant_db
+   ```
 
-### Option 2: Deploy to Heroku
+2. Deploy:
+   ```bash
+   vercel --prod
+   ```
 
-```bash
-cd api
-heroku create your-restaurant-api
-git push heroku main
+### Update Frontend
+
+Update `.env`:
+```env
+REACT_APP_API_URL=https://your-api.vercel.app/api
 ```
 
-Then update your frontend `.env`:
-```
-REACT_APP_API_URL=https://your-restaurant-api.herokuapp.com/api
-```
+## Documentation
 
-### Option 3: Deploy to Railway
-
-1. Go to https://railway.app
-2. Create new project
-3. Deploy from GitHub
-4. Set root directory to `/api`
-5. Railway will auto-detect Node.js and deploy
-
-## Data Persistence
-
-- ✅ Data persists across server restarts
-- ✅ All users see the same data
-- ✅ Orders sync in real-time
-- ✅ No database setup required
+- [MongoDB Setup Guide](../MONGODB_SETUP.md) - Full setup instructions
+- [MongoDB Quick Start](../MONGODB_QUICKSTART.md) - Fast setup
+- [API Deployment](../API_DEPLOYMENT.md) - Deployment guide
 
 ## Troubleshooting
 
-### Port already in use?
+**Connection Error?**
+- Check MongoDB is running
+- Verify connection string in `.env`
+- Check IP whitelist (Atlas)
 
-Change the port in `server.js`:
-```javascript
-const PORT = process.env.PORT || 3002; // Change to 3002
-```
+**Migration Failed?**
+- Ensure JSON files exist in `../src/data/`
+- Check MongoDB connection
+- Run `npm install`
 
-### CORS errors?
+**Port in Use?**
+- Change PORT in `.env`
+- Kill existing process
 
-Make sure the API is running and the frontend `.env` has the correct API URL.
+## Support
 
-### Data not saving?
-
-Check file permissions on the `src/data/` directory.
-
-## Production Notes
-
-For production, consider:
-- Adding authentication/authorization
-- Rate limiting
-- Input validation
-- Error logging
-- Database migration (MongoDB, PostgreSQL, etc.)
+- MongoDB Docs: https://docs.mongodb.com/
+- Express Docs: https://expressjs.com/
