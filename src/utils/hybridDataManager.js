@@ -2,16 +2,6 @@
 import { apiService } from '../services/apiService';
 import ordersData from '../data/ordersData.json';
 
-// Check if API is available
-const isAPIAvailable = async () => {
-  try {
-    await apiService.healthCheck();
-    return true;
-  } catch (error) {
-    return false;
-  }
-};
-
 // Load orders from localStorage
 const loadLocalOrders = () => {
   const stored = localStorage.getItem('restaurant_orders');
