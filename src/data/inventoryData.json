@@ -1,0 +1,259 @@
+[
+  {
+    "id": 1,
+    "name": "Margarita",
+    "category": "Pizzas",
+    "price": 650,
+    "offerPrice": 550,
+    "sizes": {
+      "26cm": 650,
+      "32cm": 920,
+      "36cm": 1150
+    },
+    "stock": 30,
+    "status": "in-stock",
+    "image": "🍕"
+  },
+  {
+    "id": 2,
+    "name": "Fiambre",
+    "category": "Pizzas",
+    "price": 690,
+    "sizes": {
+      "26cm": 690,
+      "32cm": 920,
+      "36cm": 1250
+    },
+    "stock": 25,
+    "status": "in-stock",
+    "image": "🍕"
+  },
+  {
+    "id": 3,
+    "name": "Salame",
+    "category": "Pizzas",
+    "price": 690,
+    "sizes": {
+      "26cm": 690,
+      "32cm": 920,
+      "36cm": 1250
+    },
+    "stock": 25,
+    "status": "in-stock",
+    "image": "🍕"
+  },
+  {
+    "id": 4,
+    "name": "Capricciosa",
+    "category": "Pizzas",
+    "price": 710,
+    "offerPrice": 599,
+    "sizes": {
+      "26cm": 710,
+      "32cm": 950,
+      "36cm": 1330
+    },
+    "stock": 20,
+    "status": "in-stock",
+    "image": "🍕"
+  },
+  {
+    "id": 5,
+    "name": "Atum",
+    "category": "Pizzas",
+    "price": 720,
+    "sizes": {
+      "26cm": 720,
+      "32cm": 950,
+      "36cm": 1330
+    },
+    "stock": 20,
+    "status": "in-stock",
+    "image": "🍕"
+  },
+  {
+    "id": 6,
+    "name": "Hawaii",
+    "category": "Pizzas",
+    "price": 720,
+    "offerPrice": 620,
+    "sizes": {
+      "26cm": 720,
+      "32cm": 950,
+      "36cm": 1330
+    },
+    "stock": 20,
+    "status": "in-stock",
+    "image": "🍕"
+  },
+  {
+    "id": 7,
+    "name": "Quatro Stagioni",
+    "category": "Pizzas",
+    "price": 730,
+    "sizes": {
+      "26cm": 730,
+      "32cm": 990,
+      "36cm": 1390
+    },
+    "stock": 18,
+    "status": "in-stock",
+    "image": "🍕"
+  },
+  {
+    "id": 8,
+    "name": "Vegetariana",
+    "category": "Pizzas",
+    "price": 720,
+    "sizes": {
+      "26cm": 720,
+      "32cm": 950,
+      "36cm": 1360
+    },
+    "stock": 22,
+    "status": "in-stock",
+    "image": "🍕"
+  },
+  {
+    "id": 9,
+    "name": "Roma",
+    "category": "Pizzas",
+    "price": 750,
+    "sizes": {
+      "26cm": 750,
+      "32cm": 970,
+      "36cm": 1450
+    },
+    "stock": 15,
+    "status": "in-stock",
+    "image": "🍕"
+  },
+  {
+    "id": 10,
+    "name": "Brasil",
+    "category": "Pizzas",
+    "price": 730,
+    "sizes": {
+      "26cm": 730,
+      "32cm": 960,
+      "36cm": 1350
+    },
+    "stock": 18,
+    "status": "in-stock",
+    "image": "🍕"
+  },
+  {
+    "id": 11,
+    "name": "Camarão",
+    "category": "Pizzas",
+    "price": 770,
+    "sizes": {
+      "26cm": 770,
+      "32cm": 1050,
+      "36cm": 1490
+    },
+    "stock": 12,
+    "status": "in-stock",
+    "image": "🍕"
+  },
+  {
+    "id": 12,
+    "name": "Yo-Yo",
+    "category": "Pizzas",
+    "price": 770,
+    "sizes": {
+      "26cm": 770,
+      "32cm": 1050,
+      "36cm": 1480
+    },
+    "stock": 15,
+    "status": "in-stock",
+    "image": "🍕"
+  },
+  {
+    "id": 13,
+    "name": "Bolonhesa",
+    "category": "Pizzas",
+    "price": 720,
+    "sizes": {
+      "26cm": 720,
+      "32cm": 990,
+      "36cm": 1390
+    },
+    "stock": 20,
+    "status": "in-stock",
+    "image": "🍕"
+  },
+  {
+    "id": 14,
+    "name": "Döner Kebab",
+    "category": "Kebabs & Grill",
+    "price": 329,
+    "stock": 20,
+    "status": "in-stock",
+    "image": "🥙"
+  },
+  {
+    "id": 15,
+    "name": "Adana Kebab",
+    "category": "Kebabs & Grill",
+    "price": 349,
+    "stock": 8,
+    "status": "low-stock",
+    "image": "🍢"
+  },
+  {
+    "id": 16,
+    "name": "Classic Burger",
+    "category": "Burgers & Wrap",
+    "price": 279,
+    "stock": 35,
+    "status": "in-stock",
+    "image": "🍔"
+  },
+  {
+    "id": 17,
+    "name": "Chicken Shawarma Wrap",
+    "category": "Burgers & Wrap",
+    "price": 249,
+    "stock": 15,
+    "status": "in-stock",
+    "image": "🌯"
+  },
+  {
+    "id": 18,
+    "name": "French Fries",
+    "category": "Sides & Snacks",
+    "price": 99,
+    "stock": 50,
+    "status": "in-stock",
+    "image": "🍟"
+  },
+  {
+    "id": 19,
+    "name": "Hummus Platter",
+    "category": "Sides & Snacks",
+    "price": 129,
+    "stock": 6,
+    "status": "low-stock",
+    "image": "🫘"
+  },
+  {
+    "id": 20,
+    "name": "Coca Cola",
+    "category": "Beverages",
+    "price": 49,
+    "stock": 100,
+    "status": "in-stock",
+    "image": "🥤"
+  },
+  {
+    "id": 21,
+    "name": "Turkish Tea",
+    "category": "Beverages",
+    "price": 29,
+    "stock": 5,
+    "status": "low-stock",
+    "image": "🍵"
+  }
+]

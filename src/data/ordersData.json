@@ -1,0 +1,107 @@
+[
+  {
+    "id": 1,
+    "userId": 2,
+    "customerName": "John Doe",
+    "customerEmail": "john@example.com",
+    "items": [
+      {
+        "id": 6,
+        "name": "Lamb Shish Kebab",
+        "price": 3.99,
+        "quantity": 2,
+        "image": "🥙"
+      },
+      {
+        "id": 18,
+        "name": "Turkish Tea",
+        "price": 0.29,
+        "quantity": 1,
+        "image": "🍵"
+      }
+    ],
+    "subtotal": 8.27,
+    "deliveryFee": 5.00,
+    "total": 13.27,
+    "status": "Delivered",
+    "date": "2024-01-15",
+    "address": "456 Customer Avenue, Town, State 67890"
+  },
+  {
+    "id": 2,
+    "userId": 2,
+    "customerName": "John Doe",
+    "customerEmail": "john@example.com",
+    "items": [
+      {
+        "id": 4,
+        "name": "Döner Kebab",
+        "price": 3.29,
+        "quantity": 1,
+        "image": "🍗"
+      },
+      {
+        "id": 5,
+        "name": "Adana Kebab",
+        "price": 3.49,
+        "quantity": 1,
+        "image": "🍢"
+      }
+    ],
+    "subtotal": 6.78,
+    "deliveryFee": 5.00,
+    "total": 11.78,
+    "status": "Delivered",
+    "date": "2024-01-10",
+    "address": "456 Customer Avenue, Town, State 67890"
+  },
+  {
+    "id": 3,
+    "userId": 2,
+    "customerName": "John Doe",
+    "customerEmail": "john@example.com",
+    "items": [
+      {
+        "id": 10,
+        "name": "Chicken Shawarma Wrap",
+        "price": 2.49,
+        "quantity": 2,
+        "image": "🌯"
+      },
+      {
+        "id": 16,
+        "name": "Coca Cola",
+        "price": 0.49,
+        "quantity": 2,
+        "image": "🥤"
+      }
+    ],
+    "subtotal": 5.96,
+    "deliveryFee": 5.00,
+    "total": 10.96,
+    "status": "Delivered",
+    "date": "2024-01-05",
+    "address": "456 Customer Avenue, Town, State 67890"
+  },
+  {
+    "id": 1234,
+    "userId": null,
+    "customerName": "Walk-in Customer",
+    "customerEmail": null,
+    "items": [
+      {
+        "id": 6,
+        "name": "Lamb Shish Kebab",
+        "price": 3.99,
+        "quantity": 2,
+        "image": "🥙"
+      }
+    ],
+    "subtotal": 7.98,
+    "deliveryFee": 0,
+    "total": 7.98,
+    "status": "pending",
+    "date": "2024-01-15",
+    "address": null
+  }
+]

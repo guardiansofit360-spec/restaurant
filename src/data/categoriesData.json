@@ -1,0 +1,32 @@
+[
+  {
+    "id": 1,
+    "name": "All",
+    "color": "#FF6B35"
+  },
+  {
+    "id": 2,
+    "name": "Pizzas",
+    "color": "#EF4444"
+  },
+  {
+    "id": 3,
+    "name": "Kebabs & Grill",
+    "color": "#5A6C7D"
+  },
+  {
+    "id": 4,
+    "name": "Burgers & Wrap",
+    "color": "#F59E0B"
+  },
+  {
+    "id": 5,
+    "name": "Sides & Snacks",
+    "color": "#10B981"
+  },
+  {
+    "id": 6,
+    "name": "Beverages",
+    "color": "#3B82F6"
+  }
+]

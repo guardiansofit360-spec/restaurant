@@ -1,0 +1,23 @@
+[
+  {
+    "id": 1,
+    "title": "20% Off on Kebabs",
+    "code": "KEBAB20",
+    "discount": 20,
+    "active": true
+  },
+  {
+    "id": 2,
+    "title": "Free Delivery",
+    "code": "FREEDEL",
+    "discount": 5,
+    "active": true
+  },
+  {
+    "id": 3,
+    "title": "Buy 2 Get 1 Free",
+    "code": "B2G1",
+    "discount": 33,
+    "active": false
+  }
+]

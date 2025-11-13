@@ -1,0 +1,222 @@
+[
+  {
+    "id": 1,
+    "name": "Margherita Pizza",
+    "category": "Pizzas",
+    "price": 299,
+    "image": "🍕",
+    "description": "Classic tomato, mozzarella & basil",
+    "time": "20 min",
+    "difficulty": "Easy",
+    "bgColor": "#FEF3C7"
+  },
+  {
+    "id": 2,
+    "name": "Pepperoni Pizza",
+    "category": "Pizzas",
+    "price": 349,
+    "image": "🍕",
+    "description": "Loaded with pepperoni & cheese",
+    "time": "20 min",
+    "difficulty": "Easy",
+    "bgColor": "#FECACA"
+  },
+  {
+    "id": 3,
+    "name": "BBQ Chicken Pizza",
+    "category": "Pizzas",
+    "price": 399,
+    "image": "🍕",
+    "description": "BBQ sauce, chicken & onions",
+    "time": "25 min",
+    "difficulty": "Easy",
+    "bgColor": "#FED7AA"
+  },
+  {
+    "id": 4,
+    "name": "Döner Kebab",
+    "category": "Kebabs & Grill",
+    "price": 329,
+    "image": "🍗",
+    "description": "Traditional Turkish döner",
+    "time": "20 min",
+    "difficulty": "Easy",
+    "bgColor": "#FEF3C7"
+  },
+  {
+    "id": 5,
+    "name": "Adana Kebab",
+    "category": "Kebabs & Grill",
+    "price": 349,
+    "image": "🍢",
+    "description": "Spicy minced meat kebab",
+    "time": "25 min",
+    "difficulty": "Medium",
+    "bgColor": "#D1FAE5"
+  },
+  {
+    "id": 6,
+    "name": "Lamb Shish Kebab",
+    "category": "Kebabs & Grill",
+    "price": 399,
+    "image": "🥙",
+    "description": "Grilled lamb with vegetables",
+    "time": "30 min",
+    "difficulty": "Medium",
+    "bgColor": "#FED7AA"
+  },
+  {
+    "id": 7,
+    "name": "Chicken Wings",
+    "category": "Kebabs & Grill",
+    "price": 249,
+    "image": "🍗",
+    "description": "Spicy grilled chicken wings",
+    "time": "20 min",
+    "difficulty": "Easy",
+    "bgColor": "#FECACA"
+  },
+  {
+    "id": 8,
+    "name": "Classic Burger",
+    "category": "Burgers & Wrap",
+    "price": 279,
+    "image": "🍔",
+    "description": "Beef patty, lettuce, tomato & cheese",
+    "time": "15 min",
+    "difficulty": "Easy",
+    "bgColor": "#FEF3C7"
+  },
+  {
+    "id": 9,
+    "name": "Chicken Burger",
+    "category": "Burgers & Wrap",
+    "price": 259,
+    "image": "🍔",
+    "description": "Crispy chicken with special sauce",
+    "time": "15 min",
+    "difficulty": "Easy",
+    "bgColor": "#D1FAE5"
+  },
+  {
+    "id": 10,
+    "name": "Chicken Shawarma Wrap",
+    "category": "Burgers & Wrap",
+    "price": 249,
+    "image": "🌯",
+    "description": "Marinated chicken wrap",
+    "time": "15 min",
+    "difficulty": "Easy",
+    "bgColor": "#FED7AA"
+  },
+  {
+    "id": 11,
+    "name": "Falafel Wrap",
+    "category": "Burgers & Wrap",
+    "price": 199,
+    "image": "🌯",
+    "description": "Crispy falafel with tahini",
+    "time": "12 min",
+    "difficulty": "Easy",
+    "bgColor": "#D1FAE5"
+  },
+  {
+    "id": 12,
+    "name": "French Fries",
+    "category": "Sides & Snacks",
+    "price": 99,
+    "image": "🍟",
+    "description": "Crispy golden fries",
+    "time": "10 min",
+    "difficulty": "Easy",
+    "bgColor": "#FEF3C7"
+  },
+  {
+    "id": 13,
+    "name": "Onion Rings",
+    "category": "Sides & Snacks",
+    "price": 119,
+    "image": "🧅",
+    "description": "Crispy fried onion rings",
+    "time": "10 min",
+    "difficulty": "Easy",
+    "bgColor": "#FED7AA"
+  },
+  {
+    "id": 14,
+    "name": "Hummus Platter",
+    "category": "Sides & Snacks",
+    "price": 129,
+    "image": "🫘",
+    "description": "Chickpea dip with pita bread",
+    "time": "5 min",
+    "difficulty": "Easy",
+    "bgColor": "#D1FAE5"
+  },
+  {
+    "id": 15,
+    "name": "Mozzarella Sticks",
+    "category": "Sides & Snacks",
+    "price": 149,
+    "image": "🧀",
+    "description": "Fried cheese sticks",
+    "time": "12 min",
+    "difficulty": "Easy",
+    "bgColor": "#FEF3C7"
+  },
+  {
+    "id": 16,
+    "name": "Coca Cola",
+    "category": "Beverages",
+    "price": 49,
+    "image": "🥤",
+    "description": "Chilled soft drink",
+    "time": "1 min",
+    "difficulty": "Easy",
+    "bgColor": "#FECACA"
+  },
+  {
+    "id": 17,
+    "name": "Fresh Orange Juice",
+    "category": "Beverages",
+    "price": 79,
+    "image": "🍊",
+    "description": "Freshly squeezed orange juice",
+    "time": "3 min",
+    "difficulty": "Easy",
+    "bgColor": "#FED7AA"
+  },
+  {
+    "id": 18,
+    "name": "Turkish Tea",
+    "category": "Beverages",
+    "price": 29,
+    "image": "🍵",
+    "description": "Hot black tea",
+    "time": "5 min",
+    "difficulty": "Easy",
+    "bgColor": "#D1FAE5"
+  },
+  {
+    "id": 19,
+    "name": "Ayran",
+    "category": "Beverages",
+    "price": 39,
+    "image": "🥛",
+    "description": "Traditional yogurt drink",
+    "time": "2 min",
+    "difficulty": "Easy",
+    "bgColor": "#E0E7FF"
+  },
+  {
+    "id": 20,
+    "name": "Iced Coffee",
+    "category": "Beverages",
+    "price": 89,
+    "image": "☕",
+    "description": "Cold brew coffee with ice",
+    "time": "3 min",
+    "difficulty": "Easy",
+    "bgColor": "#FEF3C7"
+  }
+]
