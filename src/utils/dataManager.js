@@ -68,6 +68,8 @@ export const userManager = {
 // ============ ORDER MANAGEMENT ============
 export const orderManager = {
   getAllOrders() {
+    // Always reload from localStorage to get latest orders
+    dataStore.orders = loadOrders();
     return [...dataStore.orders].sort((a, b) => {
       const dateA = new Date(a.timestamp || a.date || 0);
       const dateB = new Date(b.timestamp || b.date || 0);
@@ -76,6 +78,8 @@ export const orderManager = {
   },
 
   getUserOrders(userId) {
+    // Always reload from localStorage to get latest orders
+    dataStore.orders = loadOrders();
     return dataStore.orders
       .filter(o => o.userId === userId)
       .sort((a, b) => {
@@ -115,6 +119,8 @@ export const orderManager = {
   },
 
   getActiveOrdersCount() {
+    // Always reload from localStorage to get latest orders
+    dataStore.orders = loadOrders();
     return dataStore.orders.filter(order => {
       const status = order.status.toLowerCase();
       return status !== 'delivered' && status !== 'completed';
