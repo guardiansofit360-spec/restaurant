@@ -46,7 +46,7 @@ const Inventory = () => {
     if (filteredCategories.length > 0 && !newItem.category) {
       setNewItem(prev => ({ ...prev, category: filteredCategories[0].name }));
     }
-  }, []);
+  }, [newItem.category]);
 
   const handleImageUpload = (e) => {
     const file = e.target.files[0];

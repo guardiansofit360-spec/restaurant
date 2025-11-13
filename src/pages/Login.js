@@ -62,9 +62,8 @@ const Login = ({ setUser }) => {
     alert('Google login failed. Please try again or use email/password login.');
   };
 
-  const { signIn: googleSignIn } = useGoogleAuth(handleGoogleSuccess, handleGoogleError);
-
-
+  // Initialize Google Auth hook
+  useGoogleAuth(handleGoogleSuccess, handleGoogleError);
 
   const handleSubmit = (e) => {
     e.preventDefault();

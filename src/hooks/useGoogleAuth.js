@@ -10,7 +10,7 @@ export const useGoogleAuth = (onSuccess, onError) => {
         callback: handleCredentialResponse,
       });
     }
-  }, []);
+  }, [handleCredentialResponse]);
 
   const handleCredentialResponse = useCallback((response) => {
     try {
