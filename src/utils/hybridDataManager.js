@@ -1,4 +1,5 @@
 // Hybrid Data Manager - Uses API when available, localStorage as fallback
+// Provides seamless fallback between API and localStorage
 import { apiService } from '../services/apiService';
 import ordersData from '../data/ordersData.json';
 
