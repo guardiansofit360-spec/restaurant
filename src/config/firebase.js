@@ -13,27 +13,18 @@ const firebaseConfig = {
 };
 
 // Initialize Firebase
-let app;
-let auth;
-let googleProvider;
-let db;
+const app = initializeApp(firebaseConfig);
 
+// Initialize Firebase Authentication
+const auth = getAuth(app);
+const googleProvider = new GoogleAuthProvider();
+
+// Initialize Firestore Database
+let db = null;
 try {
-  app = initializeApp(firebaseConfig);
-  
-  // Initialize Firebase Authentication
-  auth = getAuth(app);
-  googleProvider = new GoogleAuthProvider();
-  
-  // Initialize Firestore Database (optional)
-  try {
-    db = getFirestore(app);
-  } catch (firestoreError) {
-    console.log('Firestore not enabled yet');
-    db = null;
-  }
+  db = getFirestore(app);
 } catch (error) {
-  console.error('Firebase initialization error:', error);
+  console.log('Firestore not enabled yet:', error.message);
 }
 
 export { auth, googleProvider, db };
