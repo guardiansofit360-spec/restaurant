@@ -15,7 +15,6 @@ const Register = () => {
   const navigate = useNavigate();
 
   const handleGoogleSignup = () => {
-    alert('✅ Google account detected!\n\nYou can login directly using the "Continue with Google" button on the login page.\n\nNo registration needed!');
     navigate('/login');
   };
 
