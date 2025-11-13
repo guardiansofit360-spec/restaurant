@@ -1,0 +1,8 @@
+{
+  "scripts": {
+    "start:api": "cd api && npm start",
+    "start:frontend": "react-scripts start",
+    "start:all": "concurrently \"npm run start:api\" \"npm run start:frontend\"",
+    "install:api": "cd api && npm install"
+  }
+}

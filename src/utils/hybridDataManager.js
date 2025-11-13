@@ -1,11 +1,15 @@
-// Hybrid Data Manager - Uses Firestore when available, localStorage as fallback
-import { firestoreService } from '../services/firestoreService';
+// Hybrid Data Manager - Uses API when available, localStorage as fallback
+import { apiService } from '../services/apiService';
 import ordersData from '../data/ordersData.json';
 
-// Check if Firebase is configured
-const isFirebaseConfigured = () => {
-  return process.env.REACT_APP_FIREBASE_API_KEY && 
-         process.env.REACT_APP_FIREBASE_API_KEY !== 'YOUR_API_KEY';
+// Check if API is available
+const isAPIAvailable = async () => {
+  try {
+    await apiService.healthCheck();
+    return true;
+  } catch (error) {
+    return false;
+  }
 };
 
 // Load orders from localStorage
@@ -22,39 +26,45 @@ const saveLocalOrders = (orders) => {
 // ============ ORDER MANAGEMENT ============
 export const hybridOrderManager = {
   async getAllOrders() {
-    if (isFirebaseConfigured()) {
-      // Use Firestore
-      const result = await firestoreService.getAllOrders();
-      if (result.success) {
-        return result.orders;
-      }
-    }
-    
-    // Fallback to localStorage
-    return loadLocalOrders().sort((a, b) => {
-      const dateA = new Date(a.timestamp || a.date || 0);
-      const dateB = new Date(b.timestamp || b.date || 0);
-      return dateB - dateA;
-    });
-  },
-
-  async getUserOrders(userId) {
-    if (isFirebaseConfigured()) {
-      // Use Firestore
-      const result = await firestoreService.getUserOrders(userId);
-      if (result.success) {
-        return result.orders;
-      }
-    }
-    
-    // Fallback to localStorage
-    return loadLocalOrders()
-      .filter(o => o.userId === userId)
-      .sort((a, b) => {
+    try {
+      // Try API first
+      const orders = await apiService.getAllOrders();
+      return orders.sort((a, b) => {
         const dateA = new Date(a.timestamp || a.date || 0);
         const dateB = new Date(b.timestamp || b.date || 0);
         return dateB - dateA;
       });
+    } catch (error) {
+      console.log('API unavailable, using localStorage');
+      // Fallback to localStorage
+      return loadLocalOrders().sort((a, b) => {
+        const dateA = new Date(a.timestamp || a.date || 0);
+        const dateB = new Date(b.timestamp || b.date || 0);
+        return dateB - dateA;
+      });
+    }
+  },
+
+  async getUserOrders(userId) {
+    try {
+      // Try API first
+      const orders = await apiService.getUserOrders(userId);
+      return orders.sort((a, b) => {
+        const dateA = new Date(a.timestamp || a.date || 0);
+        const dateB = new Date(b.timestamp || b.date || 0);
+        return dateB - dateA;
+      });
+    } catch (error) {
+      console.log('API unavailable, using localStorage');
+      // Fallback to localStorage
+      return loadLocalOrders()
+        .filter(o => o.userId === userId)
+        .sort((a, b) => {
+          const dateA = new Date(a.timestamp || a.date || 0);
+          const dateB = new Date(b.timestamp || b.date || 0);
+          return dateB - dateA;
+        });
+    }
   },
 
   async createOrder(orderData) {
@@ -68,39 +78,37 @@ export const hybridOrderManager = {
       status: orderData.status || 'Pending'
     };
 
-    if (isFirebaseConfigured()) {
-      // Use Firestore
-      const result = await firestoreService.createOrder(newOrder);
-      if (result.success) {
-        return result;
-      }
+    try {
+      // Try API first
+      const createdOrder = await apiService.createOrder(newOrder);
+      return createdOrder;
+    } catch (error) {
+      console.log('API unavailable, using localStorage');
+      // Fallback to localStorage
+      const orders = loadLocalOrders();
+      orders.unshift(newOrder);
+      saveLocalOrders(orders);
+      return newOrder;
     }
-    
-    // Fallback to localStorage
-    const orders = loadLocalOrders();
-    orders.unshift(newOrder);
-    saveLocalOrders(orders);
-    return newOrder;
   },
 
   async updateOrderStatus(orderId, status) {
-    if (isFirebaseConfigured()) {
-      // Use Firestore
-      const result = await firestoreService.updateOrderStatus(orderId, status);
-      if (result.success) {
-        return { id: orderId, status };
+    try {
+      // Try API first
+      const updatedOrder = await apiService.updateOrderStatus(orderId, status);
+      return updatedOrder;
+    } catch (error) {
+      console.log('API unavailable, using localStorage');
+      // Fallback to localStorage
+      const orders = loadLocalOrders();
+      const index = orders.findIndex(o => o.id === orderId);
+      if (index !== -1) {
+        orders[index].status = status;
+        saveLocalOrders(orders);
+        return orders[index];
       }
+      return null;
     }
-    
-    // Fallback to localStorage
-    const orders = loadLocalOrders();
-    const index = orders.findIndex(o => o.id === orderId);
-    if (index !== -1) {
-      orders[index].status = status;
-      saveLocalOrders(orders);
-      return orders[index];
-    }
-    return null;
   },
 
   async getActiveOrdersCount() {
