@@ -1,4 +1,3 @@
-/* eslint-disable import/no-anonymous-default-export */
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001/api';
 
 class ApiService {
@@ -174,4 +173,4 @@ class ApiService {
 }
 
 const apiService = new ApiService();
-export default apiService;
+export { apiService as default };
