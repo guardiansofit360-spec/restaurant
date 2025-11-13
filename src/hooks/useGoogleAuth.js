@@ -2,16 +2,6 @@ import { useEffect, useCallback } from 'react';
 import { GOOGLE_CLIENT_ID } from '../config/oauth';
 
 export const useGoogleAuth = (onSuccess, onError) => {
-  useEffect(() => {
-    // Initialize Google Sign-In
-    if (window.google) {
-      window.google.accounts.id.initialize({
-        client_id: GOOGLE_CLIENT_ID,
-        callback: handleCredentialResponse,
-      });
-    }
-  }, [handleCredentialResponse]);
-
   const handleCredentialResponse = useCallback((response) => {
     try {
       // Decode JWT token to get user info
@@ -31,6 +21,16 @@ export const useGoogleAuth = (onSuccess, onError) => {
       onError(error);
     }
   }, [onSuccess, onError]);
+
+  useEffect(() => {
+    // Initialize Google Sign-In
+    if (window.google) {
+      window.google.accounts.id.initialize({
+        client_id: GOOGLE_CLIENT_ID,
+        callback: handleCredentialResponse,
+      });
+    }
+  }, [handleCredentialResponse]);
 
   const signIn = useCallback(() => {
     if (window.google) {
