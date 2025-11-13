@@ -3,10 +3,10 @@ require('dotenv').config();
 
 // Create connection pool
 const pool = mysql.createPool({
-  host: process.env.DB_HOST || 'localhost',
-  user: process.env.DB_USER || 'root',
-  password: process.env.DB_PASSWORD || '',
-  database: process.env.DB_NAME || 'restaurant_db',
+  host: process.env.DB_HOST || 'shareddb-n.hosting.stackcp.net',
+  user: process.env.DB_USER || 'turkish',
+  password: process.env.DB_PASSWORD || 'Raghav1973',
+  database: process.env.DB_NAME || 'turkish-313037e008',
   port: process.env.DB_PORT || 3306,
   waitForConnections: true,
   connectionLimit: 10,
