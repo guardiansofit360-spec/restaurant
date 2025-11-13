@@ -1,242 +1,237 @@
 const express = require('express');
 const cors = require('cors');
-require('dotenv').config();
-
-const { testConnection } = require('./config/database');
-const User = require('./models/User');
-const Order = require('./models/Order');
-const MenuItem = require('./models/MenuItem');
-const Category = require('./models/Category');
-const Offer = require('./models/Offer');
+const fs = require('fs');
+const path = require('path');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// CORS configuration for production
+// CORS configuration
 const corsOptions = {
   origin: process.env.FRONTEND_URL || '*',
   credentials: true,
   optionsSuccessStatus: 200
 };
 
-// Middleware
 app.use(cors(corsOptions));
 app.use(express.json());
 
-// Test database connection on startup
-testConnection();
+// Data storage paths
+const dataDir = path.join(__dirname, '../src/data');
+const usersFile = path.join(dataDir, 'usersData.json');
+const ordersFile = path.join(dataDir, 'ordersData.json');
+const menuFile = path.join(dataDir, 'menuData.json');
+const categoriesFile = path.join(dataDir, 'categoriesData.json');
+const offersFile = path.join(dataDir, 'offersData.json');
+
+// Helper functions
+const readJSON = (file) => {
+  try {
+    return JSON.parse(fs.readFileSync(file, 'utf8'));
+  } catch (error) {
+    return [];
+  }
+};
+
+const writeJSON = (file, data) => {
+  fs.writeFileSync(file, JSON.stringify(data, null, 2));
+};
 
 // ============ USER ROUTES ============
-app.get('/api/users', async (req, res) => {
-  try {
-    const users = await User.findAll();
-    res.json(users);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
+app.get('/api/users', (req, res) => {
+  const users = readJSON(usersFile);
+  res.json(users);
 });
 
-app.get('/api/users/:id', async (req, res) => {
-  try {
-    const user = await User.findById(req.params.id);
-    if (!user) return res.status(404).json({ error: 'User not found' });
-    res.json(user);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
+app.get('/api/users/:id', (req, res) => {
+  const users = readJSON(usersFile);
+  const user = users.find(u => u.id === parseInt(req.params.id));
+  if (!user) return res.status(404).json({ error: 'User not found' });
+  res.json(user);
 });
 
-app.post('/api/users', async (req, res) => {
-  try {
-    const user = await User.create(req.body);
-    res.status(201).json(user);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
+app.post('/api/users', (req, res) => {
+  const users = readJSON(usersFile);
+  const newUser = {
+    id: users.length > 0 ? Math.max(...users.map(u => u.id)) + 1 : 1,
+    ...req.body,
+    createdAt: new Date().toISOString()
+  };
+  users.push(newUser);
+  writeJSON(usersFile, users);
+  res.status(201).json(newUser);
 });
 
-app.post('/api/users/login', async (req, res) => {
-  try {
-    const { email, password } = req.body;
-    const user = await User.login(email, password);
-    if (!user) return res.status(401).json({ error: 'Invalid credentials' });
-    res.json(user);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
+app.post('/api/users/login', (req, res) => {
+  const { email, password } = req.body;
+  const users = readJSON(usersFile);
+  const user = users.find(u => u.email === email && u.password === password);
+  if (!user) return res.status(401).json({ error: 'Invalid credentials' });
+  res.json(user);
 });
 
-app.patch('/api/users/:id', async (req, res) => {
-  try {
-    const user = await User.update(req.params.id, req.body);
-    res.json(user);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
+app.patch('/api/users/:id', (req, res) => {
+  const users = readJSON(usersFile);
+  const index = users.findIndex(u => u.id === parseInt(req.params.id));
+  if (index === -1) return res.status(404).json({ error: 'User not found' });
+  
+  users[index] = { ...users[index], ...req.body };
+  writeJSON(usersFile, users);
+  res.json(users[index]);
 });
 
 // ============ ORDER ROUTES ============
-app.get('/api/orders', async (req, res) => {
-  try {
-    const orders = await Order.findAll();
-    res.json(orders);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
+app.get('/api/orders', (req, res) => {
+  const orders = readJSON(ordersFile);
+  res.json(orders);
 });
 
-app.get('/api/orders/user/:userId', async (req, res) => {
-  try {
-    const orders = await Order.findByUserId(req.params.userId);
-    res.json(orders);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
+app.get('/api/orders/user/:userId', (req, res) => {
+  const orders = readJSON(ordersFile);
+  const userOrders = orders.filter(o => o.userId === parseInt(req.params.userId));
+  res.json(userOrders);
 });
 
-app.get('/api/orders/stats/active', async (req, res) => {
-  try {
-    const count = await Order.getActiveCount();
-    res.json({ count });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
+app.get('/api/orders/stats/active', (req, res) => {
+  const orders = readJSON(ordersFile);
+  const activeOrders = orders.filter(o => 
+    o.status === 'pending' || o.status === 'preparing' || o.status === 'ready'
+  );
+  res.json({ count: activeOrders.length });
 });
 
-app.post('/api/orders', async (req, res) => {
-  try {
-    const order = await Order.create(req.body);
-    res.status(201).json(order);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
+app.post('/api/orders', (req, res) => {
+  const orders = readJSON(ordersFile);
+  const newOrder = {
+    id: orders.length > 0 ? Math.max(...orders.map(o => o.id)) + 1 : 1,
+    ...req.body,
+    createdAt: new Date().toISOString()
+  };
+  orders.push(newOrder);
+  writeJSON(ordersFile, orders);
+  res.status(201).json(newOrder);
 });
 
-app.patch('/api/orders/:id', async (req, res) => {
-  try {
-    const { status } = req.body;
-    const order = await Order.updateStatus(req.params.id, status);
-    res.json(order);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
+app.patch('/api/orders/:id', (req, res) => {
+  const orders = readJSON(ordersFile);
+  const index = orders.findIndex(o => o.id === parseInt(req.params.id));
+  if (index === -1) return res.status(404).json({ error: 'Order not found' });
+  
+  orders[index] = { ...orders[index], ...req.body };
+  writeJSON(ordersFile, orders);
+  res.json(orders[index]);
 });
 
 // ============ MENU ITEM ROUTES ============
-app.get('/api/menu', async (req, res) => {
-  try {
-    const items = await MenuItem.findAll();
-    res.json(items);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
+app.get('/api/menu', (req, res) => {
+  const menu = readJSON(menuFile);
+  res.json(menu);
 });
 
-app.get('/api/menu/:id', async (req, res) => {
-  try {
-    const item = await MenuItem.findById(req.params.id);
-    if (!item) return res.status(404).json({ error: 'Item not found' });
-    res.json(item);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
+app.get('/api/menu/:id', (req, res) => {
+  const menu = readJSON(menuFile);
+  const item = menu.find(m => m.id === parseInt(req.params.id));
+  if (!item) return res.status(404).json({ error: 'Item not found' });
+  res.json(item);
 });
 
-app.post('/api/menu', async (req, res) => {
-  try {
-    const item = await MenuItem.create(req.body);
-    res.status(201).json(item);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
+app.post('/api/menu', (req, res) => {
+  const menu = readJSON(menuFile);
+  const newItem = {
+    id: menu.length > 0 ? Math.max(...menu.map(m => m.id)) + 1 : 1,
+    ...req.body
+  };
+  menu.push(newItem);
+  writeJSON(menuFile, menu);
+  res.status(201).json(newItem);
 });
 
-app.patch('/api/menu/:id', async (req, res) => {
-  try {
-    const item = await MenuItem.update(req.params.id, req.body);
-    res.json(item);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
+app.patch('/api/menu/:id', (req, res) => {
+  const menu = readJSON(menuFile);
+  const index = menu.findIndex(m => m.id === parseInt(req.params.id));
+  if (index === -1) return res.status(404).json({ error: 'Item not found' });
+  
+  menu[index] = { ...menu[index], ...req.body };
+  writeJSON(menuFile, menu);
+  res.json(menu[index]);
 });
 
-app.delete('/api/menu/:id', async (req, res) => {
-  try {
-    await MenuItem.delete(req.params.id);
-    res.json({ message: 'Item deleted successfully' });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
+app.delete('/api/menu/:id', (req, res) => {
+  const menu = readJSON(menuFile);
+  const filtered = menu.filter(m => m.id !== parseInt(req.params.id));
+  writeJSON(menuFile, filtered);
+  res.json({ message: 'Item deleted successfully' });
 });
 
 // ============ CATEGORY ROUTES ============
-app.get('/api/categories', async (req, res) => {
-  try {
-    const categories = await Category.findAll();
-    res.json(categories);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
+app.get('/api/categories', (req, res) => {
+  const categories = readJSON(categoriesFile);
+  res.json(categories);
 });
 
-app.post('/api/categories', async (req, res) => {
-  try {
-    const category = await Category.create(req.body);
-    res.status(201).json(category);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
+app.post('/api/categories', (req, res) => {
+  const categories = readJSON(categoriesFile);
+  const newCategory = {
+    id: categories.length > 0 ? Math.max(...categories.map(c => c.id)) + 1 : 1,
+    ...req.body
+  };
+  categories.push(newCategory);
+  writeJSON(categoriesFile, categories);
+  res.status(201).json(newCategory);
 });
 
 // ============ OFFER ROUTES ============
-app.get('/api/offers', async (req, res) => {
-  try {
-    const offers = await Offer.findAll();
-    res.json(offers);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
+app.get('/api/offers', (req, res) => {
+  const offers = readJSON(offersFile);
+  res.json(offers);
 });
 
-app.get('/api/offers/active', async (req, res) => {
-  try {
-    const offers = await Offer.findActive();
-    res.json(offers);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
+app.get('/api/offers/active', (req, res) => {
+  const offers = readJSON(offersFile);
+  const now = new Date();
+  const activeOffers = offers.filter(o => {
+    const start = new Date(o.startDate);
+    const end = new Date(o.endDate);
+    return o.isActive && start <= now && now <= end;
+  });
+  res.json(activeOffers);
 });
 
-app.post('/api/offers', async (req, res) => {
-  try {
-    const offer = await Offer.create(req.body);
-    res.status(201).json(offer);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
+app.post('/api/offers', (req, res) => {
+  const offers = readJSON(offersFile);
+  const newOffer = {
+    id: offers.length > 0 ? Math.max(...offers.map(o => o.id)) + 1 : 1,
+    ...req.body
+  };
+  offers.push(newOffer);
+  writeJSON(offersFile, offers);
+  res.status(201).json(newOffer);
 });
 
-app.patch('/api/offers/:id', async (req, res) => {
-  try {
-    const offer = await Offer.update(req.params.id, req.body);
-    res.json(offer);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
+app.patch('/api/offers/:id', (req, res) => {
+  const offers = readJSON(offersFile);
+  const index = offers.findIndex(o => o.id === parseInt(req.params.id));
+  if (index === -1) return res.status(404).json({ error: 'Offer not found' });
+  
+  offers[index] = { ...offers[index], ...req.body };
+  writeJSON(offersFile, offers);
+  res.json(offers[index]);
 });
 
-app.delete('/api/offers/:id', async (req, res) => {
-  try {
-    await Offer.delete(req.params.id);
-    res.json({ message: 'Offer deleted successfully' });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
+app.delete('/api/offers/:id', (req, res) => {
+  const offers = readJSON(offersFile);
+  const filtered = offers.filter(o => o.id !== parseInt(req.params.id));
+  writeJSON(offersFile, filtered);
+  res.json({ message: 'Offer deleted successfully' });
 });
 
 // ============ HEALTH CHECK ============
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'OK', message: 'Restaurant API with MySQL is running' });
+  res.json({ 
+    status: 'OK', 
+    message: 'Restaurant API is running',
+    timestamp: new Date().toISOString()
+  });
 });
 
 // Start server

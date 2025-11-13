@@ -19,7 +19,7 @@ A mobile-responsive restaurant website built with React for ordering food online
 
 ## Data Storage
 
-The application uses MySQL database for persistent data storage:
+The application uses JSON file storage for data persistence:
 - Users and authentication
 - Menu items and categories
 - Orders and order history
@@ -27,7 +27,7 @@ The application uses MySQL database for persistent data storage:
 - Inventory management
 
 ### Backend API
-A Node.js/Express API connects the frontend to MySQL database. See [MYSQL_SETUP.md](./MYSQL_SETUP.md) for setup instructions.
+A simple Node.js/Express API with JSON storage. No database required!
 
 ## Demo Credentials
 
@@ -38,13 +38,11 @@ A Node.js/Express API connects the frontend to MySQL database. See [MYSQL_SETUP.
 **Customer Access:**
 - Email: john@example.com
 - Password: password123
-- Or any email/password for demo
 
 ## Installation
 
 ### Frontend Setup
 ```bash
-cd restaurant-website
 npm install
 ```
 
@@ -53,8 +51,6 @@ npm install
 cd api
 npm install
 ```
-
-See [MYSQL_SETUP.md](./MYSQL_SETUP.md) for complete database setup.
 
 ## Running the App
 
@@ -96,10 +92,17 @@ src/
 │       ├── Orders.js      # Order management
 │       ├── Inventory.js   # Menu inventory
 │       └── Offers.js      # Promo offers
+├── services/
+│   └── apiService.js      # API client
 ├── utils/
 │   └── dataManager.js     # LocalStorage utilities
 ├── App.js                 # Main app with routing
 └── index.js               # Entry point
+
+api/
+├── server.js              # Express server with all routes
+├── package.json
+└── .env                   # Environment variables
 ```
 
 ## Technologies
@@ -112,33 +115,32 @@ src/
 
 ### Backend
 - Node.js with Express
-- MySQL database
-- mysql2 (Promise-based MySQL client)
+- JSON file storage
 - CORS enabled
 - RESTful API architecture
 
-## Data Management
+## API Endpoints
 
-The app uses MySQL database for persistent storage:
+- `GET /api/health` - Health check
+- `GET /api/users` - User management
+- `POST /api/users/login` - User login
+- `GET /api/orders` - Order processing
+- `GET /api/menu` - Menu items
+- `GET /api/categories` - Food categories
+- `GET /api/offers` - Promotional offers
 
-1. Backend API handles all database operations
-2. Frontend communicates via REST API
-3. Transaction support for complex operations
-4. Connection pooling for performance
-
-### API Endpoints
-
-- `/api/users` - User management
-- `/api/orders` - Order processing
-- `/api/menu` - Menu items
-- `/api/categories` - Food categories
-- `/api/offers` - Promotional offers
-
-See [MYSQL_SETUP.md](./MYSQL_SETUP.md) for complete API documentation.
+See [api/README.md](./api/README.md) for complete API documentation.
 
 ## Deployment
 
-The app can be deployed to Vercel or any static hosting service. See [VERCEL_DEPLOYMENT_GUIDE.md](./VERCEL_DEPLOYMENT_GUIDE.md) for deployment instructions.
+### Frontend (Vercel)
+1. Push to GitHub
+2. Import to Vercel
+3. Set environment variable: `REACT_APP_API_URL=<your-api-url>/api`
+4. Deploy
+
+### Backend (Railway/Render)
+See [SIMPLE_DEPLOYMENT.md](./SIMPLE_DEPLOYMENT.md) for step-by-step deployment guide.
 
 ## Quick Start
 
@@ -147,9 +149,8 @@ See [QUICKSTART.md](./QUICKSTART.md) for a 5-minute setup guide!
 ## Documentation
 
 - [QUICKSTART.md](./QUICKSTART.md) - Get started in 5 minutes
-- [MYSQL_SETUP.md](./MYSQL_SETUP.md) - Complete MySQL setup guide
 - [api/README.md](./api/README.md) - Backend API documentation
-- [VERCEL_DEPLOYMENT_GUIDE.md](./VERCEL_DEPLOYMENT_GUIDE.md) - Deploy to production
+- [SIMPLE_DEPLOYMENT.md](./SIMPLE_DEPLOYMENT.md) - Deploy to production
 
 ## Next Steps
 
@@ -161,3 +162,4 @@ To enhance the app:
 - Add customer reviews and ratings
 - Multi-language support
 - Mobile app version
+- Upgrade to a real database (PostgreSQL/MongoDB) for production
