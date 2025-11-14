@@ -39,6 +39,15 @@ class ApiService {
     return response.json();
   }
 
+  async googleLogin(credential) {
+    const response = await fetch(`${API_URL}/auth/google`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ credential })
+    });
+    return response.json();
+  }
+
   // ============ ORDER METHODS ============
   async getAllOrders() {
     const response = await fetch(`${API_URL}/orders`);

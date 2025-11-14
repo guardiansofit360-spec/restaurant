@@ -46,6 +46,10 @@ const memoryDb = {
     return newUser;
   },
 
+  async getUserByEmail(email) {
+    return users.find(u => u.email === email);
+  },
+
   async loginUser(email, password) {
     return users.find(u => u.email === email && u.password === password);
   },

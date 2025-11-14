@@ -2,15 +2,9 @@ const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
 
-// Try Firestore first, fall back to memory if not configured
-let db;
-try {
-  db = require('./firestore-db');
-  console.log('📦 Using Firestore database');
-} catch (error) {
-  console.log('⚠️  Firestore not configured, using in-memory database');
-  db = require('./memory-db');
-}
+// Use in-memory database
+const db = require('./memory-db');
+console.log('💾 Using in-memory database');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -64,6 +58,45 @@ app.post('/api/users/login', async (req, res) => {
     res.json(user);
   } catch (error) {
     res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/auth/google', async (req, res) => {
+  try {
+    const { credential } = req.body;
+    
+    // Verify Google token
+    const { OAuth2Client } = require('google-auth-library');
+    const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+    
+    const ticket = await client.verifyIdToken({
+      idToken: credential,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    });
+    
+    const payload = ticket.getPayload();
+    const { email, name, picture } = payload;
+    
+    // Check if user exists
+    let user = await db.getUserByEmail(email);
+    
+    if (!user) {
+      // Create new user
+      user = await db.createUser({
+        name,
+        email,
+        password: 'google-oauth', // No password for OAuth users
+        role: 'customer',
+        phone: '',
+        address: '',
+        avatar: picture
+      });
+    }
+    
+    res.json(user);
+  } catch (error) {
+    console.error('Google auth error:', error);
+    res.status(401).json({ error: 'Invalid Google token' });
   }
 });
 
@@ -260,9 +293,14 @@ app.get('/api/health', async (req, res) => {
   }
 });
 
-// Start server
-app.listen(PORT, () => {
-  console.log(`\n✅ Server running on http://localhost:${PORT}`);
-  console.log(`📡 API endpoints: /api/*`);
-  console.log(`💾 Database: In-Memory (data resets on restart)\n`);
-});
+// Start server (only in local development)
+if (process.env.NODE_ENV !== 'production') {
+  app.listen(PORT, () => {
+    console.log(`\n✅ Server running on http://localhost:${PORT}`);
+    console.log(`📡 API endpoints: /api/*`);
+    console.log(`💾 Database: In-Memory (data resets on restart)\n`);
+  });
+}
+
+// Export for Vercel serverless
+module.exports = app;

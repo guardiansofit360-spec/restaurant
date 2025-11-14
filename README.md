@@ -8,7 +8,7 @@ A modern, mobile-responsive restaurant website built with React for online food 
 - 🏠 Beautiful home page with hero banner
 - 🍽️ Browse menu with category filters
 - 🛒 Shopping cart with quantity management
-- 👤 User registration and login
+- 👤 User registration and login with Google OAuth
 - 📦 Place orders with delivery tracking
 - 📱 Fully responsive mobile design
 
@@ -32,7 +32,30 @@ npm install
 cd ..
 ```
 
-### 2. Start the Application
+### 2. Configure Google OAuth (Optional)
+
+To enable Google login:
+
+1. Go to [Google Cloud Console](https://console.cloud.google.com/)
+2. Create a new project or select existing
+3. Enable Google+ API
+4. Go to Credentials > Create Credentials > OAuth client ID
+5. Choose "Web application"
+6. Add authorized JavaScript origins: `http://localhost:3000`
+7. Add authorized redirect URIs: `http://localhost:3000`
+8. Copy the Client ID
+
+Update `.env` file:
+```env
+REACT_APP_GOOGLE_CLIENT_ID=your_google_client_id_here
+```
+
+Update `api/.env` file:
+```env
+GOOGLE_CLIENT_ID=your_google_client_id_here
+```
+
+### 3. Start the Application
 
 **Terminal 1 - Start API Server:**
 ```bash
@@ -55,12 +78,13 @@ The app will open at **http://localhost:3000**
 
 **Customer Access:**
 - Any email and password will work for testing
+- Or use Google Sign-In (if configured)
 
 ## 💾 Data Storage
 
-- **Firestore Database**: Persistent, real-time, cross-device sync
-- **Automatic Fallback**: Uses in-memory if Firestore not configured
-- **Easy Setup**: 5-minute Firestore configuration (see FIRESTORE_SETUP.md)
+- **In-Memory Database**: Fast, simple data storage
+- **Note**: Data resets when server restarts
+- **Perfect for**: Development and testing
 
 ## 📁 Project Structure
 
@@ -75,6 +99,7 @@ restaurant-website/
 │   │   ├── Login.js
 │   │   └── admin/        # Admin pages
 │   ├── services/         # API services
+│   ├── config/           # Configuration files
 │   └── utils/            # Utility functions
 ├── api/
 │   ├── server.js         # Express API server
@@ -87,20 +112,26 @@ restaurant-website/
 ### Frontend
 - **React 19** - UI framework
 - **React Router v7** - Navigation
+- **@react-oauth/google** - Google authentication
 - **Lottie** - Animations
 - **CSS3** - Responsive styling
 
 ### Backend
 - **Node.js** - Runtime
 - **Express** - Web framework
+- **google-auth-library** - OAuth verification
 - **In-Memory DB** - Fast data storage
 
 ## 📡 API Endpoints
 
-### Users
+### Authentication
 - `POST /api/users/login` - User authentication
+- `POST /api/auth/google` - Google OAuth login
+
+### Users
 - `POST /api/users` - Create new user
 - `GET /api/users/:id` - Get user details
+- `PATCH /api/users/:id` - Update user
 
 ### Orders
 - `GET /api/orders` - Get all orders (admin)
@@ -131,12 +162,6 @@ restaurant-website/
 2. **Phone**: Open `http://192.168.1.100:3000`
 3. ✅ Orders sync across devices!
 
-## 📚 Documentation
-
-- **[QUICK_START.md](./QUICK_START.md)** - 5-minute quick start
-- **[FIRESTORE_SETUP.md](./FIRESTORE_SETUP.md)** - Enable persistent database
-- **[SIMPLIFIED_SETUP.md](./SIMPLIFIED_SETUP.md)** - Complete setup guide
-
 ## 🎨 Customization
 
 ### Update Menu Items
@@ -153,23 +178,25 @@ The codebase is clean and well-organized for easy modifications
 ### Frontend (.env)
 ```env
 REACT_APP_API_URL=http://localhost:3001/api
+REACT_APP_GOOGLE_CLIENT_ID=YOUR_GOOGLE_CLIENT_ID_HERE
 ```
 
 ### Backend (api/.env)
 ```env
 PORT=3001
-NODE_ENV=development
 FRONTEND_URL=http://localhost:3000
+GOOGLE_CLIENT_ID=YOUR_GOOGLE_CLIENT_ID_HERE
 ```
 
 ## 🚀 Deployment
 
-### Frontend (Vercel)
+### Frontend (Vercel/Netlify)
 1. Push to GitHub
-2. Import to Vercel
-3. Deploy automatically
+2. Import to Vercel or Netlify
+3. Add environment variables
+4. Deploy automatically
 
-### Backend (Any Node.js Hosting)
+### Backend (Heroku/Railway/Render)
 1. Deploy `api/` folder
 2. Set environment variables
 3. Start with `npm start`
@@ -179,10 +206,11 @@ FRONTEND_URL=http://localhost:3000
 - Payment gateway integration (Stripe/PayPal)
 - Email notifications
 - SMS notifications
-- Real-time order tracking
+- Real-time order tracking with WebSockets
 - Customer reviews and ratings
 - Multi-language support
 - Mobile app version
+- Persistent database (PostgreSQL/MongoDB)
 
 ## 📝 License
 
