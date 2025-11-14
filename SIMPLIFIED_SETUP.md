@@ -23,7 +23,7 @@ All Firebase and Render deployment complexity has been removed:
 ### 1. Start API Server (Terminal 1)
 ```bash
 cd restaurant-website/api
-npm run start:memory
+npm start
 ```
 
 ### 2. Start Frontend (Terminal 2)
@@ -167,8 +167,8 @@ npm run build      # Build for production
 
 ### Backend:
 ```bash
-npm run start:memory    # Start with in-memory database
-npm run dev:memory      # Start with auto-reload
+npm start          # Start API server
+npm run dev        # Start with auto-reload
 ```
 
 ---

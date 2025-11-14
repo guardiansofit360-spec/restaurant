@@ -1,131 +1,100 @@
-# 🚀 Quick Start - Firebase Authentication
+# ⚡ Quick Start Guide
 
-## What You Get
+Get your restaurant website running in 5 minutes!
 
-- ✅ Google Sign-In (one-click login)
-- ✅ Phone Authentication (SMS verification)
-- ✅ Automatic user creation
-- ✅ Profile pictures from Google
+## 📦 Step 1: Install Dependencies (2 min)
 
----
-
-## ⚡ 5-Minute Setup
-
-### 1. Create Firebase Project
-Visit: https://console.firebase.google.com/
-- Click "Add project"
-- Name it (e.g., "Restaurant")
-- Create!
-
-### 2. Enable Authentication
-- Click "Authentication" → "Get started"
-- Enable "Google" sign-in method
-- Enable "Phone" sign-in method
-
-### 3. Register Web App
-- Click web icon `</>`
-- Name it (e.g., "Restaurant Web")
-- Copy the config values
-
-### 4. Update .env File
-Open `restaurant-website/.env`:
-
-```env
-REACT_APP_API_URL=http://localhost:3001/api
-
-REACT_APP_FIREBASE_API_KEY=your-api-key-here
-REACT_APP_FIREBASE_AUTH_DOMAIN=your-project.firebaseapp.com
-REACT_APP_FIREBASE_PROJECT_ID=your-project-id
-REACT_APP_FIREBASE_STORAGE_BUCKET=your-project.appspot.com
-REACT_APP_FIREBASE_MESSAGING_SENDER_ID=your-sender-id
-REACT_APP_FIREBASE_APP_ID=your-app-id
-```
-
-### 5. Install & Run
 ```bash
-# Install dependencies
-cd restaurant-website
+# Install frontend dependencies
 npm install
 
-# Start API (Terminal 1)
+# Install backend dependencies
+cd api
+npm install
+cd ..
+```
+
+## 🚀 Step 2: Start the Servers (1 min)
+
+### Terminal 1 - Start API Server
+```bash
 cd api
 npm start
+```
 
-# Start Frontend (Terminal 2)
-cd ..
+You should see:
+```
+✅ Server running on http://localhost:3001
+📡 API endpoints: /api/*
+💾 Database: In-Memory
+```
+
+### Terminal 2 - Start Frontend
+```bash
 npm start
 ```
 
-### 6. Test It!
-1. Go to http://localhost:3000/login
-2. Click "Continue with Google" → Sign in
-3. Or click "Continue with Phone" → Enter number → Verify code
-4. Done! 🎉
+Browser will open automatically at **http://localhost:3000**
 
----
+## 👤 Step 3: Login and Test (2 min)
 
-## 📱 What Users See
+### Admin Login:
+- Email: `admin@admin.com`
+- Password: `admin123`
+- Access: Admin dashboard, order management
 
-### Login Page:
-```
-┌─────────────────────────────┐
-│  Email/Password Login       │
-│                             │
-│  ─────── OR ───────         │
-│                             │
-│  [🔵 Continue with Google]  │
-│  [📱 Continue with Phone]   │
-└─────────────────────────────┘
-```
+### Customer Login:
+- Email: Any email (e.g., `customer@test.com`)
+- Password: Any password
+- Access: Menu, cart, orders
 
-### Phone Login:
-```
-1. Click "Continue with Phone"
-2. Enter: +1234567890
-3. Click "Send Code"
-4. Check phone for SMS
-5. Enter 6-digit code
-6. Logged in!
-```
+## ✅ You're Done!
 
----
+Your restaurant website is now running with:
+- ✅ Full menu browsing
+- ✅ Shopping cart
+- ✅ Order placement
+- ✅ Admin dashboard
+- ✅ Cross-device order sync
 
-## 🌐 Deploy to Vercel
+## 🧪 Test Cross-Device Orders
 
-### 1. Set Environment Variables
-In Vercel dashboard, add all Firebase variables
+### Same Computer:
+1. **Chrome**: Login as customer, create order
+2. **Firefox**: Login as admin, view orders
+3. ✅ Orders sync!
 
-### 2. Add Domain to Firebase
-In Firebase Console → Authentication → Settings → Authorized domains
-- Add: `your-app.vercel.app`
+### Different Devices:
+1. Find your computer's IP: `ipconfig` (Windows) or `ifconfig` (Mac)
+2. On phone: Open `http://YOUR-IP:3000`
+3. ✅ Orders sync across devices!
 
-### 3. Deploy
+## 📚 Next Steps
+
+- **Customize Menu**: Edit `src/data/menuData.json`
+- **Change Colors**: Edit CSS files
+- **Add Features**: Check `SIMPLIFIED_SETUP.md` for details
+
+## 🆘 Troubleshooting
+
+**API not working?**
 ```bash
-git add .
-git commit -m "Add Firebase auth"
-git push
+cd api
+npm start
 ```
 
----
+**Frontend not loading?**
+```bash
+npm start
+```
 
-## 🐛 Common Issues
-
-**"Invalid API key"**
-→ Check .env file has correct Firebase config
-
-**"Unauthorized domain"**
-→ Add your domain to Firebase authorized domains
-
-**Phone code not received**
-→ Check phone number has country code (+1, +44, etc.)
+**Port already in use?**
+- Stop other servers or change port in `api/.env`
 
 ---
 
-## 📚 Full Documentation
+**Total Time**: 5 minutes ⏱️
 
-See `FIREBASE_SETUP.md` for complete guide
+**Result**: Fully functional restaurant website! 🎉
 
----
-
-**Setup Time**: 5-10 minutes
-**Result**: Professional authentication! 🎉
+For detailed documentation, see [SIMPLIFIED_SETUP.md](./SIMPLIFIED_SETUP.md)
