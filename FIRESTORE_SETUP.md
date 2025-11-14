@@ -33,7 +33,15 @@
 1. In Firebase Console, click the ⚙️ gear icon → **"Project settings"**
 2. Copy your **Project ID** (e.g., `restaurant-app-54ff6`)
 
-### Step 4: Update Backend Configuration (1 min)
+### Step 4: Get Service Account Key (2 min)
+
+1. In Firebase Console, click ⚙️ → **"Project settings"**
+2. Go to **"Service accounts"** tab
+3. Click **"Generate new private key"**
+4. Click **"Generate key"** (downloads a JSON file)
+5. Save the file as `serviceAccountKey.json` in `restaurant-website/api/` folder
+
+### Step 5: Update Backend Configuration (1 min)
 
 Edit `restaurant-website/api/.env`:
 
@@ -43,8 +51,13 @@ NODE_ENV=development
 FRONTEND_URL=http://localhost:3000
 
 # Add your Firebase Project ID
-FIREBASE_PROJECT_ID=your-project-id-here
+FIREBASE_PROJECT_ID=restaurant-app-54ff6
+
+# Add path to service account key
+GOOGLE_APPLICATION_CREDENTIALS=./serviceAccountKey.json
 ```
+
+**Important**: Add `serviceAccountKey.json` to `.gitignore` (already done)
 
 ### Step 5: Install Dependencies & Start
 

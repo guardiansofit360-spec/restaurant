@@ -2,7 +2,8 @@
 const admin = require('firebase-admin');
 
 // Initialize Firebase Admin
-let db;
+let db = null;
+let firestoreEnabled = false;
 
 try {
   // Try to initialize with service account (production)
@@ -11,21 +12,31 @@ try {
     admin.initializeApp({
       credential: admin.credential.cert(serviceAccount)
     });
-  } else if (process.env.FIREBASE_PROJECT_ID) {
-    // Initialize with project ID (development)
+    db = admin.firestore();
+    firestoreEnabled = true;
+    console.log('✅ Firestore connected with service account');
+  } else if (process.env.GOOGLE_APPLICATION_CREDENTIALS) {
+    // Initialize with credentials file
     admin.initializeApp({
+      credential: admin.credential.applicationDefault(),
       projectId: process.env.FIREBASE_PROJECT_ID
     });
+    db = admin.firestore();
+    firestoreEnabled = true;
+    console.log('✅ Firestore connected with application credentials');
+  } else if (process.env.FIREBASE_PROJECT_ID) {
+    // For development without credentials, we'll fall back to memory
+    console.log('⚠️  Firebase Project ID found but no credentials');
+    console.log('📝 To enable Firestore, see FIRESTORE_SETUP.md');
+    console.log('📝 Using in-memory database for now');
+    db = null;
   } else {
     throw new Error('Firebase configuration not found');
   }
-  
-  db = admin.firestore();
-  console.log('✅ Firestore connected successfully');
 } catch (error) {
-  console.error('❌ Firestore initialization failed:', error.message);
-  console.log('📝 Falling back to in-memory database');
-  // Fall back to memory database
+  console.log('⚠️  Firestore not configured:', error.message);
+  console.log('📝 Using in-memory database');
+  console.log('📝 To enable Firestore, see FIRESTORE_SETUP.md');
   db = null;
 }
 
@@ -276,7 +287,7 @@ const firestoreDb = {
 };
 
 // Initialize default data
-if (db) {
+if (db && firestoreEnabled) {
   firestoreDb.initializeDefaultData().catch(console.error);
 }
 
