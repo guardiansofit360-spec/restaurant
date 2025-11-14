@@ -58,9 +58,9 @@ The app will open at **http://localhost:3000**
 
 ## 💾 Data Storage
 
-- **In-Memory Database**: Fast and simple, perfect for development
-- **Cross-Device Sync**: Orders sync across all devices via API
-- **No Setup Required**: No database installation needed
+- **Firestore Database**: Persistent, real-time, cross-device sync
+- **Automatic Fallback**: Uses in-memory if Firestore not configured
+- **Easy Setup**: 5-minute Firestore configuration (see FIRESTORE_SETUP.md)
 
 ## 📁 Project Structure
 
@@ -133,8 +133,9 @@ restaurant-website/
 
 ## 📚 Documentation
 
-- **[SIMPLIFIED_SETUP.md](./SIMPLIFIED_SETUP.md)** - Complete setup guide
 - **[QUICK_START.md](./QUICK_START.md)** - 5-minute quick start
+- **[FIRESTORE_SETUP.md](./FIRESTORE_SETUP.md)** - Enable persistent database
+- **[SIMPLIFIED_SETUP.md](./SIMPLIFIED_SETUP.md)** - Complete setup guide
 
 ## 🎨 Customization
 
