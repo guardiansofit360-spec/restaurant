@@ -5,14 +5,15 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
+    "start:memory": "node server-memory.js",
     "dev": "nodemon server.js",
+    "dev:memory": "nodemon server-memory.js",
     "init-db": "node init-db.js"
   },
   "dependencies": {
     "cors": "^2.8.5",
     "dotenv": "^16.3.1",
     "express": "^4.18.2",
-    "firebase-admin": "^12.7.0",
     "pg": "^8.11.3"
   },
   "devDependencies": {
