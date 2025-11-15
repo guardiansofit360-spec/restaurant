@@ -66,6 +66,30 @@ class FirestoreDataService {
     }
   }
 
+  async getUserByGoogleId(googleId) {
+    try {
+      const users = await getDocuments(COLLECTIONS.USERS);
+      return users.find(u => u.googleId === googleId) || null;
+    } catch (error) {
+      console.error('Error getting user by Google ID:', error);
+      return null;
+    }
+  }
+
+  async createGoogleUser(userData) {
+    try {
+      const userId = await addDocument(COLLECTIONS.USERS, {
+        ...userData,
+        role: 'customer',
+        createdAt: new Date().toISOString()
+      });
+      return { id: userId, ...userData };
+    } catch (error) {
+      console.error('Error creating Google user:', error);
+      throw error;
+    }
+  }
+
   // ============ ORDER METHODS ============
   
   async createOrder(orderData) {
