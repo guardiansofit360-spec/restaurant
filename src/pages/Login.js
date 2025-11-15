@@ -24,26 +24,26 @@ const Login = ({ setUser }) => {
     e.preventDefault();
     setError('');
     setLoading(true);
-    
+
     try {
       // Login using Firestore
       const user = await firestoreDataService.loginUser(email, password);
-      
+
       if (user) {
         console.log('Login successful:', user);
-        const userData = { 
+        const userData = {
           id: user.id,
-          name: user.name, 
-          email: user.email, 
+          name: user.name,
+          email: user.email,
           role: user.role,
           phone: user.phone || '',
           address: user.address || ''
         };
-        
+
         // Save session to Firestore
         await userSessionService.saveUserSession(userData);
         setUser(userData);
-        
+
         if (user.role === 'admin') {
           navigate('/admin');
         } else {
@@ -84,7 +84,7 @@ const Login = ({ setUser }) => {
         </div>
 
         <div className="auth-form">
-          {error && <div className="error-message" style={{color: 'red', marginBottom: '10px'}}>{error}</div>}
+          {error && <div className="error-message" style={{ color: 'red', marginBottom: '10px' }}>{error}</div>}
           <form onSubmit={handleSubmit}>
             <input
               type="email"

@@ -113,6 +113,14 @@ const Cart = ({ cart, updateQuantity, removeFromCart, clearCart, user }) => {
 
     if (cart.length > 0 && user) {
       setIsPlacingOrder(true);
+      
+      // Check internet connection
+      if (!navigator.onLine) {
+        alert('No internet connection. Please check your network and try again.');
+        setIsPlacingOrder(false);
+        return;
+      }
+      
       try {
         // Create new order with timestamp
         const orderDate = new Date();
@@ -157,11 +165,25 @@ const Cart = ({ cart, updateQuantity, removeFromCart, clearCart, user }) => {
         console.log('Checkout form data:', checkoutData);
         console.log('Creating order with data:', newOrder);
         console.log('==================');
-        await firestoreDataService.createOrder(newOrder);
+        
+        try {
+          const createdOrder = await firestoreDataService.createOrder(newOrder);
+          console.log('✅ Order created successfully:', createdOrder);
+        } catch (firestoreError) {
+          console.error('❌ Firestore error details:', firestoreError);
+          console.error('Error code:', firestoreError.code);
+          console.error('Error message:', firestoreError.message);
+          throw new Error(`Failed to save order: ${firestoreError.message}`);
+        }
 
         // Update active orders count
-        const activeCount = await firestoreDataService.getActiveOrdersCount();
-        setActiveOrdersCount(activeCount);
+        try {
+          const activeCount = await firestoreDataService.getActiveOrdersCount();
+          setActiveOrdersCount(activeCount);
+        } catch (countError) {
+          console.warn('Could not update active orders count:', countError);
+          // Don't fail the order if count update fails
+        }
 
         // Play success sound
         playSuccessSound();
@@ -172,8 +194,26 @@ const Cart = ({ cart, updateQuantity, removeFromCart, clearCart, user }) => {
         setIsPlacingOrder(false);
         // Don't auto-hide - let user navigate away naturally
       } catch (error) {
-        console.error('Checkout error:', error);
-        alert('Failed to place order. Please try again.');
+        console.error('❌ Checkout error:', error);
+        console.error('Error details:', {
+          message: error.message,
+          code: error.code,
+          stack: error.stack
+        });
+        
+        // Show more specific error message
+        let errorMessage = 'Failed to place order. ';
+        if (error.message.includes('permission-denied')) {
+          errorMessage += 'Permission denied. Please check your internet connection and try again.';
+        } else if (error.message.includes('network')) {
+          errorMessage += 'Network error. Please check your internet connection.';
+        } else if (error.message) {
+          errorMessage += error.message;
+        } else {
+          errorMessage += 'Please try again.';
+        }
+        
+        alert(errorMessage);
         setIsPlacingOrder(false);
       }
     }
