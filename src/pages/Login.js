@@ -1,45 +1,50 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import './Auth.css';
-import apiService from '../services/apiService';
+import firestoreDataService from '../services/firestoreDataService';
 import userSessionService from '../services/userSessionService';
+import usersData from '../data/usersData.json';
 
 const Login = ({ setUser }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+
+  // Initialize users in Firestore on component mount
+  useEffect(() => {
+    const initUsers = async () => {
+      await firestoreDataService.initializeUsers(usersData);
+    };
+    initUsers();
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setLoading(true);
     
     try {
-      // Call API to login
-      const response = await apiService.loginUser(email, password);
+      // Login using Firestore
+      const user = await firestoreDataService.loginUser(email, password);
       
-      if (response.error) {
-        setError('Invalid email or password');
-        return;
-      }
-      
-      if (response.id) {
-        console.log('Login response:', response); // Debug log
+      if (user) {
+        console.log('Login successful:', user);
         const userData = { 
-          id: response.id,
-          name: response.name, 
-          email: response.email, 
-          role: response.role,
-          phone: response.phone || '',
-          address: response.address || ''
+          id: user.id,
+          name: user.name, 
+          email: user.email, 
+          role: user.role,
+          phone: user.phone || '',
+          address: user.address || ''
         };
-        console.log('User data to save:', userData); // Debug log
         
         // Save session to Firestore
         await userSessionService.saveUserSession(userData);
         setUser(userData);
         
-        if (response.role === 'admin') {
+        if (user.role === 'admin') {
           navigate('/admin');
         } else {
           navigate('/menu');
@@ -50,6 +55,8 @@ const Login = ({ setUser }) => {
     } catch (error) {
       console.error('Login error:', error);
       setError('Login failed. Please check your credentials.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -93,7 +100,9 @@ const Login = ({ setUser }) => {
               onChange={(e) => setPassword(e.target.value)}
               required
             />
-            <button type="submit">Login</button>
+            <button type="submit" disabled={loading}>
+              {loading ? 'Logging in...' : 'Login'}
+            </button>
           </form>
 
           <p className="auth-link">

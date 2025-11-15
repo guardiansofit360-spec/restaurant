@@ -10,6 +10,7 @@ import {
 
 // Collection names
 const COLLECTIONS = {
+  USERS: 'users',
   ORDERS: 'orders',
   MENU_ITEMS: 'menuItems',
   CATEGORIES: 'categories',
@@ -18,6 +19,53 @@ const COLLECTIONS = {
 };
 
 class FirestoreDataService {
+  // ============ USER METHODS ============
+  
+  async loginUser(email, password) {
+    try {
+      const users = await getDocuments(COLLECTIONS.USERS);
+      const user = users.find(u => u.email === email && u.password === password);
+      return user || null;
+    } catch (error) {
+      console.error('Error logging in:', error);
+      return null;
+    }
+  }
+
+  async getUserByEmail(email) {
+    try {
+      const users = await getDocuments(COLLECTIONS.USERS);
+      return users.find(u => u.email === email) || null;
+    } catch (error) {
+      console.error('Error getting user:', error);
+      return null;
+    }
+  }
+
+  async createUser(userData) {
+    try {
+      const userId = await addDocument(COLLECTIONS.USERS, userData);
+      return { id: userId, ...userData };
+    } catch (error) {
+      console.error('Error creating user:', error);
+      throw error;
+    }
+  }
+
+  async initializeUsers(usersData) {
+    try {
+      const existingUsers = await getDocuments(COLLECTIONS.USERS);
+      if (existingUsers.length === 0) {
+        console.log('Initializing users...');
+        for (const user of usersData) {
+          await this.createUser(user);
+        }
+      }
+    } catch (error) {
+      console.error('Error initializing users:', error);
+    }
+  }
+
   // ============ ORDER METHODS ============
   
   async createOrder(orderData) {
