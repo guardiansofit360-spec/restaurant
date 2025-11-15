@@ -58,6 +58,8 @@ function App() {
             role: session.role,
             phone: session.phone,
             address: session.address,
+            photoURL: session.photoURL,
+            googleId: session.googleId,
           });
           
           // Load user's cart from Firestore

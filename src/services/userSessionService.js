@@ -21,6 +21,8 @@ class UserSessionService {
         role: userData.role,
         phone: userData.phone || '',
         address: userData.address || '',
+        photoURL: userData.photoURL || '',
+        googleId: userData.googleId || '',
         lastActive: new Date().toISOString(),
       };
 
