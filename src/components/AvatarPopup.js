@@ -37,7 +37,11 @@ const AvatarPopup = ({ user, isOpen, onClose }) => {
       <div className="avatar-modal" onClick={(e) => e.stopPropagation()}>
         <div className="avatar-modal-header">
           <div className="modal-avatar">
-            <span>👤</span>
+            {user.photoURL ? (
+              <img src={user.photoURL} alt={user.name} className="modal-avatar-img" />
+            ) : (
+              <span>👤</span>
+            )}
           </div>
           <h3>{user.name}</h3>
           <p>{user.email}</p>

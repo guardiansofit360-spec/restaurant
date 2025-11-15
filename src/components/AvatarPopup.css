@@ -61,6 +61,13 @@
   font-size: 40px;
   margin: 0 auto 15px;
   box-shadow: 0 4px 12px rgba(255, 107, 53, 0.3);
+  overflow: hidden;
+}
+
+.modal-avatar .modal-avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .avatar-modal-header h3 {
