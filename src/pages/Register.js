@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import './Auth.css';
-import apiService from '../services/apiService';
+import firestoreDataService from '../services/firestoreDataService';
 
 const Register = () => {
   const [formData, setFormData] = useState({
@@ -12,6 +12,7 @@ const Register = () => {
     address: ''
   });
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
 
@@ -23,35 +24,43 @@ const Register = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setLoading(true);
 
     try {
-      // Create new user via API
+      // Check if user already exists
+      const existingUser = await firestoreDataService.getUserByEmail(formData.email);
+      
+      if (existingUser) {
+        setError('An account with this email already exists');
+        setLoading(false);
+        return;
+      }
+
+      // Create new user in Firestore
       const newUser = {
         name: formData.name,
         email: formData.email,
         password: formData.password,
         phone: formData.phone,
         address: formData.address || '',
-        role: 'customer'
+        role: 'customer',
+        createdAt: new Date().toISOString()
       };
 
-      console.log('Sending registration request:', newUser);
+      console.log('Creating user in Firestore:', newUser);
 
-      // Call API to create user
-      const response = await apiService.createUser(newUser);
+      // Save user to Firestore
+      const response = await firestoreDataService.createUser(newUser);
 
-      console.log('Registration response:', response);
-
-      if (response.error) {
-        setError(response.error);
-        return;
-      }
+      console.log('Registration successful:', response);
 
       alert('Registration successful! Please login with your credentials.');
       navigate('/login');
     } catch (error) {
-      console.error('Registration error details:', error);
-      setError(`Registration failed: ${error.message || 'Please check if API server is running'}`);
+      console.error('Registration error:', error);
+      setError('Registration failed. Please try again.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -119,7 +128,9 @@ const Register = () => {
               required
               minLength="6"
             />
-            <button type="submit">Create Account</button>
+            <button type="submit" disabled={loading}>
+              {loading ? 'Creating Account...' : 'Create Account'}
+            </button>
           </form>
 
           <p className="auth-link">
