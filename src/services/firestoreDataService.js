@@ -90,6 +90,16 @@ class FirestoreDataService {
     }
   }
 
+  async updateUser(userId, userData) {
+    try {
+      await updateDocById(COLLECTIONS.USERS, userId, userData);
+      return true;
+    } catch (error) {
+      console.error('Error updating user:', error);
+      throw error;
+    }
+  }
+
   // ============ ORDER METHODS ============
   
   async createOrder(orderData) {

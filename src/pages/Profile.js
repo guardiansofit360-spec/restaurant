@@ -1,11 +1,15 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { storage } from '../firebase';
 import userSessionService from '../services/userSessionService';
+import firestoreDataService from '../services/firestoreDataService';
 import './Profile.css';
 
 const Profile = ({ user, setUser }) => {
   const navigate = useNavigate();
   const [isEditing, setIsEditing] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [formData, setFormData] = useState({
     name: user?.name || '',
     email: user?.email || '',
@@ -25,12 +29,69 @@ const Profile = ({ user, setUser }) => {
     });
   };
 
+  const handleProfilePictureUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      alert('Please select an image file');
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      alert('Image size should be less than 5MB');
+      return;
+    }
+
+    setUploading(true);
+
+    try {
+      // Create a reference to the storage location
+      const storageRef = ref(storage, `profile-pictures/${user.id}/${Date.now()}_${file.name}`);
+      
+      // Upload the file
+      console.log('Uploading profile picture...');
+      await uploadBytes(storageRef, file);
+      
+      // Get the download URL
+      const photoURL = await getDownloadURL(storageRef);
+      console.log('Profile picture uploaded:', photoURL);
+      
+      // Update user with new photo URL
+      const updatedUser = { ...user, photoURL };
+      
+      // Save to Firestore
+      await userSessionService.saveUserSession(updatedUser);
+      
+      // Update users collection in Firestore
+      if (user.id) {
+        await firestoreDataService.updateUser(user.id, { photoURL });
+      }
+      
+      setUser(updatedUser);
+      alert('Profile picture updated successfully!');
+    } catch (error) {
+      console.error('Error uploading profile picture:', error);
+      alert('Failed to upload profile picture. Please try again.');
+    } finally {
+      setUploading(false);
+    }
+  };
+
   const handleSave = async () => {
     try {
       const updatedUser = { ...user, ...formData };
       
       // Save to Firestore
       await userSessionService.saveUserSession(updatedUser);
+      
+      // Update users collection in Firestore
+      if (user.id) {
+        await firestoreDataService.updateUser(user.id, formData);
+      }
+      
       setUser(updatedUser);
       setIsEditing(false);
     } catch (error) {
@@ -72,8 +133,25 @@ const Profile = ({ user, setUser }) => {
 
       {/* Avatar Section */}
       <div className="profile-avatar-section">
-        <div className="profile-avatar-large">
-          <span>👤</span>
+        <div className="profile-avatar-container">
+          <div className="profile-avatar-large">
+            {user.photoURL ? (
+              <img src={user.photoURL} alt={user.name} className="profile-avatar-img" />
+            ) : (
+              <span>👤</span>
+            )}
+          </div>
+          <label htmlFor="profile-picture-upload" className="profile-picture-upload-btn">
+            <input
+              type="file"
+              id="profile-picture-upload"
+              accept="image/*"
+              onChange={handleProfilePictureUpload}
+              style={{ display: 'none' }}
+              disabled={uploading}
+            />
+            {uploading ? '⏳ Uploading...' : '📷 Change Photo'}
+          </label>
         </div>
         <h2>{user.name}</h2>
         <p className="profile-role">{user.role === 'admin' ? 'Administrator' : 'Customer'}</p>

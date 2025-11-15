@@ -46,6 +46,13 @@
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
+.profile-avatar-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 15px;
+}
+
 .profile-avatar-large {
   width: 100px;
   height: 100px;
@@ -55,15 +62,44 @@
   align-items: center;
   justify-content: center;
   font-size: 50px;
-  margin: 0 auto 20px;
   box-shadow: 0 4px 12px rgba(255, 107, 53, 0.3);
+  overflow: hidden;
+  position: relative;
+}
+
+.profile-avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.profile-picture-upload-btn {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 10px 20px;
+  border-radius: 25px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+  display: inline-block;
+}
+
+.profile-picture-upload-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.profile-picture-upload-btn:active {
+  transform: translateY(0);
 }
 
 .profile-avatar-section h2 {
   font-size: 28px;
   font-weight: bold;
   color: #1F1F1F;
-  margin: 0 0 8px 0;
+  margin: 20px 0 8px 0;
 }
 
 .profile-role {
