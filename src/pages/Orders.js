@@ -148,7 +148,11 @@ const Orders = ({ user, cart = [] }) => {
                 <span>💬</span>
               </Link>
               <div className="user-avatar" onClick={() => setShowAvatarPopup(true)}>
-                <span>👤</span>
+                {user.photoURL ? (
+                  <img src={user.photoURL} alt={user.name} className="avatar-img" />
+                ) : (
+                  <span>👤</span>
+                )}
               </div>
             </div>
           </>
