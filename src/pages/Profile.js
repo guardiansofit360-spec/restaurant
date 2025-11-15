@@ -1,7 +1,5 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { storage } from '../firebase';
 import userSessionService from '../services/userSessionService';
 import firestoreDataService from '../services/firestoreDataService';
 import './Profile.css';
@@ -44,79 +42,62 @@ const Profile = ({ user, setUser }) => {
       return;
     }
 
-    // Validate file size (max 5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      alert('Image size should be less than 5MB');
+    // Validate file size (max 1MB for base64 storage)
+    if (file.size > 1 * 1024 * 1024) {
+      alert('Image size should be less than 1MB');
       return;
     }
 
     setUploading(true);
-    console.log('Starting upload process...');
+    console.log('Converting image to base64...');
 
     try {
-      // Check if storage is initialized
-      if (!storage) {
-        throw new Error('Firebase Storage is not initialized');
-      }
+      // Convert image to base64 data URL
+      const reader = new FileReader();
+      
+      reader.onload = async (event) => {
+        try {
+          const photoURL = event.target.result; // This is the base64 data URL
+          console.log('Image converted to base64, length:', photoURL.length);
+          
+          // Update user with new photo URL
+          const updatedUser = { ...user, photoURL };
+          console.log('Updating user session...');
+          
+          // Save to Firestore
+          await userSessionService.saveUserSession(updatedUser);
+          console.log('Session updated');
+          
+          // Update users collection in Firestore
+          if (user.id) {
+            console.log('Updating user in Firestore...');
+            await firestoreDataService.updateUser(user.id, { photoURL });
+            console.log('User updated in Firestore');
+          }
+          
+          setUser(updatedUser);
+          setUploading(false);
+          alert('Profile picture updated successfully!');
+        } catch (error) {
+          console.error('❌ Error saving profile picture:', error);
+          alert('Failed to save profile picture. Please try again.');
+          setUploading(false);
+        }
+      };
 
-      // Create a reference to the storage location
-      const storagePath = `profile-pictures/${user.id}/${Date.now()}_${file.name}`;
-      console.log('Storage path:', storagePath);
+      reader.onerror = (error) => {
+        console.error('❌ Error reading file:', error);
+        alert('Failed to read image file. Please try again.');
+        setUploading(false);
+      };
+
+      // Read the file as data URL (base64)
+      reader.readAsDataURL(file);
       
-      const storageRef = ref(storage, storagePath);
-      console.log('Storage reference created');
-      
-      // Upload the file
-      console.log('Uploading file to Firebase Storage...');
-      const uploadResult = await uploadBytes(storageRef, file);
-      console.log('Upload complete:', uploadResult);
-      
-      // Get the download URL
-      console.log('Getting download URL...');
-      const photoURL = await getDownloadURL(storageRef);
-      console.log('Download URL obtained:', photoURL);
-      
-      // Update user with new photo URL
-      const updatedUser = { ...user, photoURL };
-      console.log('Updating user session...');
-      
-      // Save to Firestore
-      await userSessionService.saveUserSession(updatedUser);
-      console.log('Session updated');
-      
-      // Update users collection in Firestore
-      if (user.id) {
-        console.log('Updating user in Firestore...');
-        await firestoreDataService.updateUser(user.id, { photoURL });
-        console.log('User updated in Firestore');
-      }
-      
-      setUser(updatedUser);
-      alert('Profile picture updated successfully!');
     } catch (error) {
       console.error('❌ Error uploading profile picture:', error);
-      console.error('Error code:', error.code);
-      console.error('Error message:', error.message);
-      console.error('Error details:', error);
-      
-      let errorMessage = 'Failed to upload profile picture. ';
-      
-      if (error.code === 'storage/unauthorized') {
-        errorMessage += 'Storage permission denied. Please enable Firebase Storage in Firebase Console.';
-      } else if (error.code === 'storage/canceled') {
-        errorMessage += 'Upload was cancelled.';
-      } else if (error.code === 'storage/unknown') {
-        errorMessage += 'Unknown error occurred. Check if Firebase Storage is enabled.';
-      } else if (error.message) {
-        errorMessage += error.message;
-      } else {
-        errorMessage += 'Please try again.';
-      }
-      
-      alert(errorMessage);
-    } finally {
+      alert('Failed to upload profile picture. Please try again.');
       setUploading(false);
-      console.log('Upload process finished');
     }
   };
 
