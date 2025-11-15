@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { GoogleLogin } from '@react-oauth/google';
 import './Auth.css';
 import apiService from '../services/apiService';
+import userSessionService from '../services/userSessionService';
 
 const Login = ({ setUser }) => {
   const [email, setEmail] = useState('');
@@ -24,6 +24,7 @@ const Login = ({ setUser }) => {
       }
       
       if (response.id) {
+        console.log('Login response:', response); // Debug log
         const userData = { 
           id: response.id,
           name: response.name, 
@@ -32,8 +33,11 @@ const Login = ({ setUser }) => {
           phone: response.phone || '',
           address: response.address || ''
         };
+        console.log('User data to save:', userData); // Debug log
+        
+        // Save session to Firestore
+        await userSessionService.saveUserSession(userData);
         setUser(userData);
-        sessionStorage.setItem('currentUser', JSON.stringify(userData));
         
         if (response.role === 'admin') {
           navigate('/admin');
@@ -49,43 +53,7 @@ const Login = ({ setUser }) => {
     }
   };
 
-  const handleGoogleSuccess = async (credentialResponse) => {
-    try {
-      const response = await apiService.googleLogin(credentialResponse.credential);
-      
-      if (response.error) {
-        setError('Google login failed');
-        return;
-      }
-      
-      if (response.id) {
-        const userData = { 
-          id: response.id,
-          name: response.name, 
-          email: response.email, 
-          role: response.role,
-          phone: response.phone || '',
-          address: response.address || '',
-          avatar: response.avatar || ''
-        };
-        setUser(userData);
-        sessionStorage.setItem('currentUser', JSON.stringify(userData));
-        
-        if (response.role === 'admin') {
-          navigate('/admin');
-        } else {
-          navigate('/menu');
-        }
-      }
-    } catch (error) {
-      console.error('Google login error:', error);
-      setError('Google login failed. Please try again.');
-    }
-  };
 
-  const handleGoogleError = () => {
-    setError('Google login failed. Please try again.');
-  };
 
   return (
     <div className="auth-page">
@@ -127,22 +95,6 @@ const Login = ({ setUser }) => {
             />
             <button type="submit">Login</button>
           </form>
-
-          <div className="auth-divider">
-            <span>OR</span>
-          </div>
-
-          <div className="google-login-wrapper">
-            <GoogleLogin
-              onSuccess={handleGoogleSuccess}
-              onError={handleGoogleError}
-              useOneTap
-              theme="filled_blue"
-              size="large"
-              text="signin_with"
-              shape="rectangular"
-            />
-          </div>
 
           <p className="auth-link">
             Don't have an account? <Link to="/register">Sign Up</Link>

@@ -3,21 +3,58 @@ import { Link } from 'react-router-dom';
 import './Menu.css';
 import categoriesData from '../data/categoriesData.json';
 import AvatarPopup from '../components/AvatarPopup';
-import { orderManager, inventoryManager } from '../utils/dataManager';
+import firestoreDataService from '../services/firestoreDataService';
+import useActiveOrdersCount from '../hooks/useActiveOrdersCount';
+import inventoryDataJson from '../data/inventoryData.json';
 
 const Menu = ({ addToCart, user, cart = [] }) => {
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [showAvatarPopup, setShowAvatarPopup] = useState(false);
   const [flyingItem, setFlyingItem] = useState(null);
   const [menuData, setMenuData] = useState([]);
+  const [loading, setLoading] = useState(true);
   
   // Calculate cart count from prop
   const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
+  
+  // Get active orders count
+  const activeOrdersCount = useActiveOrdersCount(user?.id);
 
+  // Load menu items from Firestore
   useEffect(() => {
-    // Load menu items from dataManager
-    const inventory = inventoryManager.getInventory();
-    setMenuData(inventory);
+    const loadMenu = async () => {
+      try {
+        setLoading(true);
+        let menuItems = await firestoreDataService.getMenuItems();
+        
+        // Initialize with default data if empty
+        if (menuItems.length === 0) {
+          console.log('Initializing menu from JSON...');
+          await firestoreDataService.initializeCollections({
+            menuItems: inventoryDataJson,
+            categories: categoriesData,
+          });
+          menuItems = await firestoreDataService.getMenuItems();
+        }
+        
+        setMenuData(menuItems);
+      } catch (error) {
+        console.error('Error loading menu:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadMenu();
+  }, []);
+
+  // Real-time listener for menu updates
+  useEffect(() => {
+    const unsubscribe = firestoreDataService.onMenuItemsChange((updatedItems) => {
+      setMenuData(updatedItems);
+    });
+
+    return () => unsubscribe && unsubscribe();
   }, []);
 
 
@@ -97,8 +134,8 @@ const Menu = ({ addToCart, user, cart = [] }) => {
       </div>
 
       <div className="menu-grid">
-        {filteredMenu.map(item => (
-          <div key={item.id} className="menu-card">
+        {filteredMenu.map((item, index) => (
+          <div key={item.id || `menu-item-${index}`} className="menu-card">
             {item.offerPrice && (
               <div className="best-deal-badge">
                 <span>🏆 Best Deal</span>
@@ -186,14 +223,7 @@ const Menu = ({ addToCart, user, cart = [] }) => {
             <path d="M9 11L12 14L22 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
             <path d="M21 12V19C21 19.5304 20.7893 20.0391 20.4142 20.4142C20.0391 20.7893 19.5304 21 19 21H5C4.46957 21 3.96086 20.7893 3.58579 20.4142C3.21071 20.0391 3 19.5304 3 19V5C3 4.46957 3.21071 3.96086 3.58579 3.58579C3.96086 3.21071 4.46957 3 5 3H16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
-          {(() => {
-            if (!user) return null;
-            const userOrders = orderManager.getUserOrders(user.id);
-            const activeOrders = userOrders.filter(order => 
-              order.status.toLowerCase() !== 'delivered' && order.status.toLowerCase() !== 'completed'
-            );
-            return activeOrders.length > 0 ? <span className="orders-count-badge">{activeOrders.length}</span> : null;
-          })()}
+          {activeOrdersCount > 0 && <span className="orders-count-badge">{activeOrdersCount}</span>}
           <span className="nav-label">Orders</span>
         </Link>
       </nav>

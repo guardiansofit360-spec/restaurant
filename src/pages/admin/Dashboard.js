@@ -1,20 +1,135 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import './Admin.css';
 import AvatarPopup from '../../components/AvatarPopup';
-import { orderManager } from '../../utils/dataManager';
+import Preloader from '../../components/Preloader';
+import firestoreDataService from '../../services/firestoreDataService';
+import userSessionService from '../../services/userSessionService';
 
 const Dashboard = () => {
   const [showAvatarPopup, setShowAvatarPopup] = useState(false);
-  
-  // Get user from sessionStorage
-  const user = JSON.parse(sessionStorage.getItem('currentUser') || '{}');
-  const stats = [
-    { title: 'Total Orders', value: '156', icon: '📦' },
-    { title: 'Pending Orders', value: '12', icon: '⏳' },
-    { title: 'Menu Items', value: '48', icon: '🍽️' },
-    { title: 'Revenue Today', value: '€2,450', icon: '💰' },
+  const [user, setUser] = useState(null);
+  const [stats, setStats] = useState({
+    totalOrders: 0,
+    pendingOrders: 0,
+    menuItems: 0,
+    revenueToday: 0
+  });
+  const [recentActivity, setRecentActivity] = useState([]);
+
+  // Load user session
+  useEffect(() => {
+    const loadUser = async () => {
+      const session = await userSessionService.getUserSession();
+      setUser(session);
+    };
+    loadUser();
+  }, []);
+
+  // Load dashboard stats
+  useEffect(() => {
+    const loadStats = async () => {
+      try {
+        // Get all orders
+        const allOrders = await firestoreDataService.getAllOrders();
+        
+        // Total orders
+        const totalOrders = allOrders.length;
+        
+        // Pending orders (pending, preparing, ready)
+        const pendingOrders = allOrders.filter(order => {
+          const status = order.status?.toLowerCase() || 'pending';
+          return status === 'pending' || status === 'preparing' || status === 'ready' || status === 'processing';
+        }).length;
+        
+        // Menu items
+        const menuItems = await firestoreDataService.getMenuItems();
+        const menuItemsCount = menuItems.length;
+        
+        // Revenue today
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const todayOrders = allOrders.filter(order => {
+          const orderDate = new Date(order.orderDate);
+          return orderDate >= today;
+        });
+        const revenueToday = todayOrders.reduce((sum, order) => sum + (order.total || 0), 0);
+        
+        setStats({
+          totalOrders,
+          pendingOrders,
+          menuItems: menuItemsCount,
+          revenueToday
+        });
+
+        // Generate recent activity from latest orders
+        const sortedOrders = [...allOrders].sort((a, b) => {
+          const dateA = new Date(a.orderDate || 0);
+          const dateB = new Date(b.orderDate || 0);
+          return dateB - dateA; // Latest first
+        });
+
+        const activities = [];
+        
+        // Get last 5 orders for activity
+        sortedOrders.slice(0, 5).forEach(order => {
+          const orderDate = new Date(order.orderDate);
+          const now = new Date();
+          const diffMs = now - orderDate;
+          const diffMins = Math.floor(diffMs / 60000);
+          const diffHours = Math.floor(diffMs / 3600000);
+          const diffDays = Math.floor(diffMs / 86400000);
+          
+          let timeAgo;
+          if (diffMins < 1) {
+            timeAgo = 'Just now';
+          } else if (diffMins < 60) {
+            timeAgo = `${diffMins} min${diffMins > 1 ? 's' : ''} ago`;
+          } else if (diffHours < 24) {
+            timeAgo = `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+          } else {
+            timeAgo = `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+          }
+
+          const status = order.status?.toLowerCase() || 'pending';
+          let message = '';
+          
+          if (status === 'delivered' || status === 'completed') {
+            message = `Order #${order.id} completed`;
+          } else if (status === 'shipped') {
+            message = `Order #${order.id} shipped`;
+          } else if (status === 'processing') {
+            message = `Order #${order.id} is being prepared`;
+          } else {
+            message = `New order #${order.id} received`;
+          }
+
+          activities.push({ message, timeAgo });
+        });
+
+        setRecentActivity(activities);
+      } catch (error) {
+        console.error('Error loading dashboard stats:', error);
+      }
+    };
+    
+    loadStats();
+    
+    // Refresh every 30 seconds
+    const interval = setInterval(loadStats, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const statsDisplay = [
+    { title: 'Total Orders', value: stats.totalOrders.toString(), icon: '📦' },
+    { title: 'Pending Orders', value: stats.pendingOrders.toString(), icon: '⏳' },
+    { title: 'Menu Items', value: stats.menuItems.toString(), icon: '🍽️' },
+    { title: 'Revenue Today', value: `€${stats.revenueToday.toFixed(2)}`, icon: '💰' },
   ];
+
+  if (!user) {
+    return <Preloader />;
+  }
 
   return (
     <div className="admin-page">
@@ -37,7 +152,7 @@ const Dashboard = () => {
       </div>
 
       <div className="stats-grid">
-        {stats.map((stat, index) => (
+        {statsDisplay.map((stat, index) => (
           <div key={index} className="stat-card">
             <div className="stat-icon">{stat.icon}</div>
             <div className="stat-info">
@@ -51,18 +166,19 @@ const Dashboard = () => {
       <div className="recent-activity">
         <h2>Recent Activity</h2>
         <div className="activity-list">
-          <div className="activity-item">
-            <span>New order #1234 received</span>
-            <span className="time">5 min ago</span>
-          </div>
-          <div className="activity-item">
-            <span>Order #1233 completed</span>
-            <span className="time">15 min ago</span>
-          </div>
-          <div className="activity-item">
-            <span>New customer registered</span>
-            <span className="time">1 hour ago</span>
-          </div>
+          {recentActivity.length === 0 ? (
+            <div className="activity-item">
+              <span>No recent activity</span>
+              <span className="time">-</span>
+            </div>
+          ) : (
+            recentActivity.map((activity, index) => (
+              <div key={index} className="activity-item">
+                <span>{activity.message}</span>
+                <span className="time">{activity.timeAgo}</span>
+              </div>
+            ))
+          )}
         </div>
       </div>
 
@@ -80,10 +196,7 @@ const Dashboard = () => {
             <path d="M9 11L12 14L22 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
             <path d="M21 12V19C21 19.5304 20.7893 20.0391 20.4142 20.4142C20.0391 20.7893 19.5304 21 19 21H5C4.46957 21 3.96086 20.7893 3.58579 20.4142C3.21071 20.0391 3 19.5304 3 19V5C3 4.46957 3.21071 3.96086 3.58579 3.58579C3.96086 3.21071 4.46957 3 5 3H16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
-          {(() => {
-            const activeCount = orderManager.getActiveOrdersCount();
-            return activeCount > 0 ? <span className="orders-count-badge">{activeCount}</span> : null;
-          })()}
+          {stats.pendingOrders > 0 && <span className="orders-count-badge">{stats.pendingOrders}</span>}
           <span className="nav-label">Orders</span>
         </Link>
         <Link to="/admin/inventory" className="nav-item">

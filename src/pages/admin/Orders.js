@@ -1,61 +1,68 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import './Admin.css';
 import AvatarPopup from '../../components/AvatarPopup';
-import { orderManager } from '../../utils/dataManager';
+import Preloader from '../../components/Preloader';
+import firestoreDataService from '../../services/firestoreDataService';
+import userSessionService from '../../services/userSessionService';
 import apiService from '../../services/apiService';
 
 const Orders = () => {
   const [orders, setOrders] = useState([]);
   const [showAvatarPopup, setShowAvatarPopup] = useState(false);
-  const [useApi, setUseApi] = useState(true);
-  
-  // Get user from sessionStorage
-  const user = JSON.parse(sessionStorage.getItem('currentUser') || '{}');
+  const [user, setUser] = useState(null);
+  const [useApi, setUseApi] = useState(false);
 
-  // Load orders from API or localStorage on mount and refresh periodically
-  React.useEffect(() => {
+  // Load user session
+  useEffect(() => {
+    const loadUser = async () => {
+      const session = await userSessionService.getUserSession();
+      setUser(session);
+    };
+    loadUser();
+  }, []);
+
+  // Load orders from Firestore with real-time updates
+  useEffect(() => {
     const loadOrders = async () => {
       try {
-        // Try to load from API first
-        const apiOrders = await apiService.getAllOrders();
-        if (apiOrders && !apiOrders.error) {
-          // Format API orders to match expected structure
-          const formattedOrders = apiOrders.map(order => ({
-            id: order.id,
-            userId: order.user_id,
-            customerName: order.customer_name || 'Customer',
-            customerEmail: order.customer_email || '',
-            items: typeof order.items === 'string' ? JSON.parse(order.items) : order.items,
-            total: parseFloat(order.total),
-            status: order.status || 'Pending',
-            date: new Date(order.created_at).toISOString().split('T')[0],
-            time: new Date(order.created_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }),
-            timestamp: order.created_at,
-            address: order.delivery_address || 'Not provided'
-          }));
-          setOrders(formattedOrders);
-          setUseApi(true);
-          return;
-        }
+        console.log('📦 Loading orders from Firestore...');
+        // Use Firestore directly (API doesn't support customer fields)
+        const firestoreOrders = await firestoreDataService.getAllOrders();
+        console.log('✅ Loaded', firestoreOrders.length, 'orders from Firestore');
+        
+        // Sort by date - latest first
+        const sortedOrders = firestoreOrders.sort((a, b) => {
+          const dateA = new Date(a.orderDate || 0);
+          const dateB = new Date(b.orderDate || 0);
+          return dateB - dateA; // Descending order (latest first)
+        });
+        setOrders(sortedOrders);
+        setUseApi(false);
       } catch (error) {
-        console.log('API not available, using localStorage:', error);
+        console.error('Error loading orders from Firestore:', error);
       }
-      
-      // Fallback to localStorage
-      const loadedOrders = orderManager.getAllOrders();
-      setOrders(loadedOrders);
-      setUseApi(false);
     };
 
-    // Initial load
     loadOrders();
-
-    // Refresh orders every 5 seconds to catch new orders
-    const interval = setInterval(loadOrders, 5000);
-
-    return () => clearInterval(interval);
   }, []);
+
+  // Real-time listener for orders
+  useEffect(() => {
+    if (!useApi) {
+      const unsubscribe = firestoreDataService.onOrdersChange((updatedOrders) => {
+        // Sort by date - latest first
+        const sortedOrders = updatedOrders.sort((a, b) => {
+          const dateA = new Date(a.orderDate || 0);
+          const dateB = new Date(b.orderDate || 0);
+          return dateB - dateA; // Descending order (latest first)
+        });
+        setOrders(sortedOrders);
+      });
+
+      return () => unsubscribe && unsubscribe();
+    }
+  }, [useApi]);
 
   const getNextStatus = (currentStatus) => {
     const statusFlow = {
@@ -76,23 +83,32 @@ const Orders = () => {
     const nextStatus = getNextStatus(order.status);
     if (!nextStatus) return;
 
+    // Optimistically update UI
+    setOrders(prevOrders => 
+      prevOrders.map(o => 
+        o.id === orderId ? { ...o, status: nextStatus } : o
+      )
+    );
+
     try {
       if (useApi) {
         // Update via API
         await apiService.updateOrderStatus(orderId, nextStatus);
       } else {
-        // Fallback to localStorage
-        orderManager.updateOrderStatus(orderId, nextStatus);
+        // Update in Firestore (real-time listener will update UI)
+        await firestoreDataService.updateOrderStatus(orderId, nextStatus);
       }
     } catch (error) {
       console.error('Error updating order status:', error);
-      // Fallback to localStorage
-      orderManager.updateOrderStatus(orderId, nextStatus);
+      alert('Failed to update order status. Please try again.');
+      
+      // Revert optimistic update on error
+      setOrders(prevOrders => 
+        prevOrders.map(o => 
+          o.id === orderId ? { ...o, status: order.status } : o
+        )
+      );
     }
-    
-    // Refresh orders list
-    const updatedOrders = orderManager.getAllOrders();
-    setOrders(updatedOrders);
   };
 
   const getStatusColor = (status) => {
@@ -146,6 +162,10 @@ const Orders = () => {
     }
   };
 
+  if (!user) {
+    return <Preloader />;
+  }
+
   return (
     <div className="admin-page">
       {/* User Header */}
@@ -172,14 +192,16 @@ const Orders = () => {
             <div className="admin-order-header">
               <div>
                 <h3>Order #{order.id}</h3>
-                <p className="admin-order-customer">{order.customerName || order.customer}</p>
+                <p className="admin-order-customer">
+                  {order.customerName || order.customerEmail || order.customer || 'Customer'}
+                </p>
                 <p className="admin-order-date">
-                  {new Date(order.date).toLocaleDateString('en-US', { 
+                  {order.orderDate ? new Date(order.orderDate).toLocaleDateString('en-US', { 
                     year: 'numeric', 
                     month: 'long', 
                     day: 'numeric' 
-                  })}
-                  {order.time && <span className="admin-order-time"> • {order.time}</span>}
+                  }) : 'N/A'}
+                  {order.orderDate && <span className="admin-order-time"> • {new Date(order.orderDate).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</span>}
                 </p>
               </div>
               <div 
@@ -221,11 +243,21 @@ const Orders = () => {
               ) : (
                 <p><strong>Items:</strong> {order.items}</p>
               )}
-              {order.address && (
-                <p className="admin-order-address">
-                  <strong>📍 Delivery Address:</strong> {order.address}
+              <div className="admin-order-details">
+                <p className="admin-order-info">
+                  <strong>👤 Customer:</strong> {order.customerName || order.customerEmail || 'Customer'}
                 </p>
-              )}
+                {order.customerPhone && (
+                  <p className="admin-order-info">
+                    <strong>📞 Phone:</strong> {order.customerPhone}
+                  </p>
+                )}
+                {order.address && (
+                  <p className="admin-order-info">
+                    <strong>📍 Address:</strong> {order.address}
+                  </p>
+                )}
+              </div>
             </div>
             <div className="admin-order-footer">
               <span className="admin-order-total">€{typeof order.total === 'number' ? order.total.toFixed(2) : order.total}</span>

@@ -12,6 +12,8 @@ import Support from './pages/Support';
 import AdminDashboard from './pages/admin/Dashboard';
 import AdminOrders from './pages/admin/Orders';
 import AdminInventory from './pages/admin/Inventory';
+import Preloader from './components/Preloader';
+import userSessionService from './services/userSessionService';
 import './App.css';
 
 function AppContent({ user, cart, addToCart, updateQuantity, removeFromCart, clearCart, setUser }) {
@@ -41,35 +43,51 @@ function AppContent({ user, cart, addToCart, updateQuantity, removeFromCart, cle
 function App() {
   const [user, setUser] = useState(null);
   const [cart, setCart] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  // Load user and cart on app start
+  // Load user and cart from Firestore on app start
   useEffect(() => {
-    // Load user from session
-    const savedUser = sessionStorage.getItem('currentUser');
-    if (savedUser) {
+    const loadUserSession = async () => {
       try {
-        const parsedUser = JSON.parse(savedUser);
-        setUser(parsedUser);
-        
-        // Load user's cart
-        const userCartKey = `cart_${parsedUser.id}`;
-        const savedCart = sessionStorage.getItem(userCartKey);
-        if (savedCart) {
-          setCart(JSON.parse(savedCart));
+        const session = await userSessionService.getUserSession();
+        if (session) {
+          setUser({
+            id: session.userId,
+            name: session.name,
+            email: session.email,
+            role: session.role,
+            phone: session.phone,
+            address: session.address,
+          });
+          
+          // Load user's cart from Firestore
+          const savedCart = await userSessionService.getCart(session.userId);
+          setCart(savedCart);
         }
       } catch (error) {
-        console.error('Error loading user:', error);
+        console.error('Error loading user session:', error);
+      } finally {
+        setLoading(false);
       }
-    }
+    };
+
+    loadUserSession();
   }, []);
 
-  // Save cart whenever it changes
+  // Save cart to Firestore whenever it changes
   useEffect(() => {
-    if (user) {
-      const userCartKey = `cart_${user.id}`;
-      sessionStorage.setItem(userCartKey, JSON.stringify(cart));
-    }
-  }, [cart, user]);
+    const saveCartToFirestore = async () => {
+      if (user && !loading) {
+        try {
+          await userSessionService.saveCart(user.id, cart);
+        } catch (error) {
+          console.error('Error saving cart:', error);
+        }
+      }
+    };
+
+    saveCartToFirestore();
+  }, [cart, user, loading]);
 
   const addToCart = (item) => {
     let newCart;
@@ -97,9 +115,21 @@ function App() {
     setCart(newCart);
   };
 
-  const clearCart = () => {
+  const clearCart = async () => {
     setCart([]);
+    if (user) {
+      try {
+        await userSessionService.clearCart(user.id);
+      } catch (error) {
+        console.error('Error clearing cart:', error);
+      }
+    }
   };
+
+  // Show loading state while checking session
+  if (loading) {
+    return <Preloader />;
+  }
 
   return (
     <Router>

@@ -1,18 +1,19 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import './Admin.css';
 import inventoryDataJson from '../../data/inventoryData.json';
 import categoriesDataJson from '../../data/categoriesData.json';
 import AvatarPopup from '../../components/AvatarPopup';
-import { orderManager } from '../../utils/dataManager';
+import Preloader from '../../components/Preloader';
+import firestoreDataService from '../../services/firestoreDataService';
+import userSessionService from '../../services/userSessionService';
 
 const Inventory = () => {
   const [items, setItems] = useState([]);
   const [categories, setCategories] = useState([]);
   const [showAvatarPopup, setShowAvatarPopup] = useState(false);
-  
-  // Get user from localStorage
-  const user = JSON.parse(localStorage.getItem('currentUser') || '{}');
+  const [user, setUser] = useState(null);
+  const [activeOrdersCount, setActiveOrdersCount] = useState(0);
 
   const [newItem, setNewItem] = useState({
     name: '',
@@ -24,29 +25,84 @@ const Inventory = () => {
   const [imagePreview, setImagePreview] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Load inventory and categories on mount
-  React.useEffect(() => {
-    // Load from localStorage first, fallback to JSON
-    const storedInventory = localStorage.getItem('restaurant_inventory');
-    if (storedInventory) {
-      setItems(JSON.parse(storedInventory));
-    } else {
-      setItems(inventoryDataJson);
-      localStorage.setItem('restaurant_inventory', JSON.stringify(inventoryDataJson));
-    }
+  // Load user session
+  useEffect(() => {
+    const loadUser = async () => {
+      const session = await userSessionService.getUserSession();
+      setUser(session);
+    };
+    loadUser();
+  }, []);
 
-    // Load categories
-    const storedCategories = localStorage.getItem('restaurant_categories');
-    const loadedCategories = storedCategories ? JSON.parse(storedCategories) : categoriesDataJson;
-    // Filter out "All" category for the dropdown
-    const filteredCategories = loadedCategories.filter(cat => cat.name !== 'All');
-    setCategories(filteredCategories);
+  // Load active orders count
+  useEffect(() => {
+    const loadCount = async () => {
+      const count = await firestoreDataService.getActiveOrdersCount();
+      setActiveOrdersCount(count);
+    };
+    loadCount();
     
-    // Set default category if available
-    if (filteredCategories.length > 0 && !newItem.category) {
-      setNewItem(prev => ({ ...prev, category: filteredCategories[0].name }));
-    }
-  }, [newItem.category]);
+    // Refresh every 10 seconds
+    const interval = setInterval(loadCount, 10000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Load inventory and categories from Firestore
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        // Load menu items from Firestore
+        let menuItems = await firestoreDataService.getMenuItems();
+        
+        // Initialize with default data if empty
+        if (menuItems.length === 0) {
+          console.log('Initializing menu items from JSON...');
+          await firestoreDataService.initializeCollections({
+            menuItems: inventoryDataJson,
+            categories: categoriesDataJson,
+          });
+          menuItems = await firestoreDataService.getMenuItems();
+        }
+        
+        setItems(menuItems);
+
+        // Load categories
+        let loadedCategories = await firestoreDataService.getCategories();
+        if (loadedCategories.length === 0) {
+          loadedCategories = categoriesDataJson;
+        }
+        
+        // Filter out "All" category and remove duplicates
+        const filteredCategories = loadedCategories
+          .filter(cat => cat.name !== 'All')
+          .filter((cat, index, self) => 
+            index === self.findIndex(c => c.name === cat.name)
+          );
+        
+        console.log('Loaded categories:', filteredCategories);
+        setCategories(filteredCategories);
+        
+        // Set default category if available
+        if (filteredCategories.length > 0 && !newItem.category) {
+          setNewItem(prev => ({ ...prev, category: filteredCategories[0].name }));
+        }
+      } catch (error) {
+        console.error('Error loading data:', error);
+      }
+    };
+
+    loadData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Real-time listener for menu items
+  useEffect(() => {
+    const unsubscribe = firestoreDataService.onMenuItemsChange((updatedItems) => {
+      setItems(updatedItems);
+    });
+
+    return () => unsubscribe && unsubscribe();
+  }, []);
 
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
@@ -122,34 +178,38 @@ const Inventory = () => {
     }
   };
 
-  const handleSaveEdit = (itemId) => {
-    const updatedItems = items.map(item => 
-      item.id === itemId 
-        ? {
-            ...item,
-            name: editForm.name,
-            category: editForm.category,
-            price: parseFloat(editForm.price),
-            offerPrice: editForm.offerPrice ? parseFloat(editForm.offerPrice) : null,
-            image: editForm.image,
-            bgColor: categories.find(cat => cat.name === editForm.category)?.color || item.bgColor
-          }
-        : item
-    );
-    setItems(updatedItems);
-    localStorage.setItem('restaurant_inventory', JSON.stringify(updatedItems));
-    handleCancelEdit();
-  };
-
-  const handleDeleteItem = (itemId) => {
-    if (window.confirm('Are you sure you want to delete this item?')) {
-      const updatedItems = items.filter(item => item.id !== itemId);
-      setItems(updatedItems);
-      localStorage.setItem('restaurant_inventory', JSON.stringify(updatedItems));
+  const handleSaveEdit = async (itemId) => {
+    try {
+      const updatedData = {
+        name: editForm.name,
+        category: editForm.category,
+        price: parseFloat(editForm.price),
+        offerPrice: editForm.offerPrice ? parseFloat(editForm.offerPrice) : null,
+        image: editForm.image,
+        bgColor: categories.find(cat => cat.name === editForm.category)?.color || 
+                 items.find(item => item.id === itemId)?.bgColor
+      };
+      
+      await firestoreDataService.updateMenuItem(itemId, updatedData);
+      handleCancelEdit();
+    } catch (error) {
+      console.error('Error updating item:', error);
+      alert('Failed to update item. Please try again.');
     }
   };
 
-  const handleAddItem = (e) => {
+  const handleDeleteItem = async (itemId) => {
+    if (window.confirm('Are you sure you want to delete this item?')) {
+      try {
+        await firestoreDataService.deleteMenuItem(itemId);
+      } catch (error) {
+        console.error('Error deleting item:', error);
+        alert('Failed to delete item. Please try again.');
+      }
+    }
+  };
+
+  const handleAddItem = async (e) => {
     e.preventDefault();
     
     if (!newItem.image) {
@@ -157,22 +217,28 @@ const Inventory = () => {
       return;
     }
 
-    const item = {
-      id: Date.now(),
-      name: newItem.name,
-      category: newItem.category,
-      price: parseFloat(newItem.price),
-      offerPrice: newItem.offerPrice ? parseFloat(newItem.offerPrice) : null,
-      image: newItem.image,
-      bgColor: categories.find(cat => cat.name === newItem.category)?.color || '#FF6B35'
-    };
-    const updatedItems = [...items, item];
-    setItems(updatedItems);
-    // Save to localStorage
-    localStorage.setItem('restaurant_inventory', JSON.stringify(updatedItems));
-    setNewItem({ name: '', category: categories[0]?.name || '', price: '', offerPrice: '', image: '' });
-    setImagePreview(null);
+    try {
+      const item = {
+        name: newItem.name,
+        category: newItem.category,
+        price: parseFloat(newItem.price),
+        offerPrice: newItem.offerPrice ? parseFloat(newItem.offerPrice) : null,
+        image: newItem.image,
+        bgColor: categories.find(cat => cat.name === newItem.category)?.color || '#FF6B35'
+      };
+      
+      await firestoreDataService.createMenuItem(item);
+      setNewItem({ name: '', category: categories[0]?.name || '', price: '', offerPrice: '', image: '' });
+      setImagePreview(null);
+    } catch (error) {
+      console.error('Error adding item:', error);
+      alert('Failed to add item. Please try again.');
+    }
   };
+
+  if (!user) {
+    return <Preloader />;
+  }
 
   return (
     <div className="admin-page">
@@ -213,8 +279,8 @@ const Inventory = () => {
               {categories.length === 0 ? (
                 <option value="">Loading categories...</option>
               ) : (
-                categories.map(cat => (
-                  <option key={cat.id} value={cat.name}>{cat.name}</option>
+                categories.map((cat, index) => (
+                  <option key={`${cat.name}-${index}`} value={cat.name}>{cat.name}</option>
                 ))
               )}
             </select>
@@ -346,8 +412,8 @@ const Inventory = () => {
                     onChange={(e) => setEditForm({ ...editForm, category: e.target.value })}
                     required
                   >
-                    {categories.map(cat => (
-                      <option key={cat.id} value={cat.name}>{cat.name}</option>
+                    {categories.map((cat, index) => (
+                      <option key={`edit-${cat.name}-${index}`} value={cat.name}>{cat.name}</option>
                     ))}
                   </select>
                 </div>
@@ -422,10 +488,7 @@ const Inventory = () => {
             <path d="M9 11L12 14L22 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
             <path d="M21 12V19C21 19.5304 20.7893 20.0391 20.4142 20.4142C20.0391 20.7893 19.5304 21 19 21H5C4.46957 21 3.96086 20.7893 3.58579 20.4142C3.21071 20.0391 3 19.5304 3 19V5C3 4.46957 3.21071 3.96086 3.58579 3.58579C3.96086 3.21071 4.46957 3 5 3H16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
-          {(() => {
-            const activeCount = orderManager.getActiveOrdersCount();
-            return activeCount > 0 ? <span className="orders-count-badge">{activeCount}</span> : null;
-          })()}
+          {activeOrdersCount > 0 && <span className="orders-count-badge">{activeOrdersCount}</span>}
           <span className="nav-label">Orders</span>
         </Link>
         <Link to="/admin/inventory" className="nav-item active">

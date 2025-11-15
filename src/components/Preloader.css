@@ -1,0 +1,21 @@
+.preloader-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background: #ffffff;
+}
+
+.preloader {
+  text-align: center;
+  max-width: 400px;
+  width: 100%;
+  padding: 20px;
+}
+
+.loading-animation {
+  width: 100%;
+  height: auto;
+  max-width: 300px;
+  margin: 0 auto;
+}

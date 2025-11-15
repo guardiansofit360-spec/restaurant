@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import userSessionService from '../services/userSessionService';
 import './Profile.css';
 
 const Profile = ({ user, setUser }) => {
@@ -24,11 +25,28 @@ const Profile = ({ user, setUser }) => {
     });
   };
 
-  const handleSave = () => {
-    const updatedUser = { ...user, ...formData };
-    setUser(updatedUser);
-    localStorage.setItem('currentUser', JSON.stringify(updatedUser));
-    setIsEditing(false);
+  const handleSave = async () => {
+    try {
+      const updatedUser = { ...user, ...formData };
+      
+      // Save to Firestore
+      await userSessionService.saveUserSession(updatedUser);
+      setUser(updatedUser);
+      setIsEditing(false);
+    } catch (error) {
+      console.error('Error saving profile:', error);
+      alert('Failed to save profile. Please try again.');
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await userSessionService.clearUserSession();
+      setUser(null);
+      navigate('/login');
+    } catch (error) {
+      console.error('Error logging out:', error);
+    }
   };
 
   const handleCancel = () => {
@@ -146,6 +164,21 @@ const Profile = ({ user, setUser }) => {
         )}
       </div>
 
+      {/* Logout Section */}
+      <div className="profile-info-section" style={{ marginTop: '20px' }}>
+        <button 
+          className="save-btn" 
+          onClick={handleLogout}
+          style={{ 
+            width: '100%', 
+            backgroundColor: '#dc3545',
+            padding: '15px'
+          }}
+        >
+          🚪 Logout
+        </button>
+      </div>
+
       {/* Bottom Navigation */}
       <nav className="bottom-nav">
         <Link to="/" className="nav-item">
@@ -158,11 +191,6 @@ const Profile = ({ user, setUser }) => {
         </Link>
         <Link to="/cart" className="nav-item cart-nav-item">
           <span className="nav-icon">🛒</span>
-          {(() => {
-            const cart = JSON.parse(localStorage.getItem('restaurant_cart') || '[]');
-            const count = cart.reduce((sum, item) => sum + item.quantity, 0);
-            return count > 0 ? <span className="cart-count-badge">{count}</span> : null;
-          })()}
           <span className="nav-label">Cart</span>
         </Link>
         <Link to="/orders" className="nav-item">

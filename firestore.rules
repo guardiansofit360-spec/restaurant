@@ -1,0 +1,35 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // WARNING: These are DEVELOPMENT rules - they allow all read/write access
+    // DO NOT use these rules in production!
+    // For production, implement proper authentication and authorization
+    
+    match /{document=**} {
+      // Allow all reads and writes (DEVELOPMENT ONLY)
+      allow read, write: if true;
+    }
+    
+    // PRODUCTION RULES EXAMPLE (commented out):
+    // Uncomment and modify these for production use
+    
+    // // Only authenticated users can read/write their own data
+    // match /users/{userId} {
+    //   allow read, write: if request.auth != null && request.auth.uid == userId;
+    // }
+    
+    // // Public read, authenticated write
+    // match /notes/{noteId} {
+    //   allow read: if true;
+    //   allow write: if request.auth != null;
+    // }
+    
+    // // Admin only access
+    // match /admin/{document=**} {
+    //   allow read, write: if request.auth != null && 
+    //     get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    // }
+  }
+}

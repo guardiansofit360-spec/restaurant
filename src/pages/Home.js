@@ -3,7 +3,9 @@ import { Link } from 'react-router-dom';
 import './Home.css';
 import categoriesData from '../data/categoriesData.json';
 import AvatarPopup from '../components/AvatarPopup';
-import { orderManager, inventoryManager } from '../utils/dataManager';
+import firestoreDataService from '../services/firestoreDataService';
+import useActiveOrdersCount from '../hooks/useActiveOrdersCount';
+import inventoryDataJson from '../data/inventoryData.json';
 
 const Home = ({ user, addToCart, cart = [] }) => {
   // Calculate cart count from prop
@@ -13,6 +15,9 @@ const Home = ({ user, addToCart, cart = [] }) => {
   const [offerProducts, setOfferProducts] = useState([]);
   const [flyingItem, setFlyingItem] = useState(null);
   const [currentSlide, setCurrentSlide] = useState(0);
+  
+  // Get active orders count
+  const activeOrdersCount = useActiveOrdersCount(user?.id);
 
   // Hero slides data
   const heroSlides = [
@@ -33,13 +38,40 @@ const Home = ({ user, addToCart, cart = [] }) => {
     }
   ];
 
+  // Load products with offer prices from Firestore
   useEffect(() => {
-    // Load products with offer prices from dataManager
-    const inventory = inventoryManager.getInventory();
-    
-    // Filter only products that have offer prices
-    const productsWithOffers = inventory.filter(item => item.offerPrice);
-    setOfferProducts(productsWithOffers);
+    const loadOffers = async () => {
+      try {
+        let menuItems = await firestoreDataService.getMenuItems();
+        
+        // Initialize if empty
+        if (menuItems.length === 0) {
+          await firestoreDataService.initializeCollections({
+            menuItems: inventoryDataJson,
+            categories: categoriesData,
+          });
+          menuItems = await firestoreDataService.getMenuItems();
+        }
+        
+        // Filter only products that have offer prices
+        const productsWithOffers = menuItems.filter(item => item.offerPrice);
+        setOfferProducts(productsWithOffers);
+      } catch (error) {
+        console.error('Error loading offers:', error);
+      }
+    };
+
+    loadOffers();
+  }, []);
+
+  // Real-time listener for menu updates
+  useEffect(() => {
+    const unsubscribe = firestoreDataService.onMenuItemsChange((updatedItems) => {
+      const productsWithOffers = updatedItems.filter(item => item.offerPrice);
+      setOfferProducts(productsWithOffers);
+    });
+
+    return () => unsubscribe && unsubscribe();
   }, []);
 
   // Auto-slide effect
@@ -166,9 +198,9 @@ const Home = ({ user, addToCart, cart = [] }) => {
           <Link to="/menu" className="see-all">See all</Link>
         </div>
         <div className="category-scroll">
-          {categories.map(cat => (
+          {categories.map((cat, index) => (
             <button
-              key={cat.id}
+              key={cat.id || cat.name || `cat-${index}`}
               className={`category-btn ${selectedCategory === cat.name ? 'active' : ''}`}
               style={{ 
                 '--category-color': cat.color,
@@ -193,8 +225,8 @@ const Home = ({ user, addToCart, cart = [] }) => {
 
       {/* Dishes Grid */}
       <div className="dishes-section">
-        {dishes.map(dish => (
-          <div key={dish.id} className="dish-card">
+        {dishes.map((dish, index) => (
+          <div key={dish.id || `dish-${index}`} className="dish-card">
             <div className="best-deal-badge">
               <span>🏆 Best Deal</span>
             </div>
@@ -218,11 +250,11 @@ const Home = ({ user, addToCart, cart = [] }) => {
                 <div className="dish-price">
                   {dish.offerPrice ? (
                     <>
-                      <span className="original-price">₹{dish.price}</span>
-                      <span className="offer-price">₹{dish.offerPrice}</span>
+                      <span className="original-price">€{dish.price}</span>
+                      <span className="offer-price">€{dish.offerPrice}</span>
                     </>
                   ) : (
-                    <span className="regular-price">₹{dish.price}</span>
+                    <span className="regular-price">€{dish.price}</span>
                   )}
                 </div>
               </div>
@@ -282,14 +314,7 @@ const Home = ({ user, addToCart, cart = [] }) => {
             <path d="M9 11L12 14L22 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
             <path d="M21 12V19C21 19.5304 20.7893 20.0391 20.4142 20.4142C20.0391 20.7893 19.5304 21 19 21H5C4.46957 21 3.96086 20.7893 3.58579 20.4142C3.21071 20.0391 3 19.5304 3 19V5C3 4.46957 3.21071 3.96086 3.58579 3.58579C3.96086 3.21071 4.46957 3 5 3H16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
-          {(() => {
-            if (!user) return null;
-            const userOrders = orderManager.getUserOrders(user.id);
-            const activeOrders = userOrders.filter(order => 
-              order.status.toLowerCase() !== 'delivered' && order.status.toLowerCase() !== 'completed'
-            );
-            return activeOrders.length > 0 ? <span className="orders-count-badge">{activeOrders.length}</span> : null;
-          })()}
+          {activeOrdersCount > 0 && <span className="orders-count-badge">{activeOrdersCount}</span>}
           <span className="nav-label">Orders</span>
         </Link>
       </nav>

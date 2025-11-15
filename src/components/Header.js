@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import userSessionService from '../services/userSessionService';
 import './Header.css';
 
 const Header = ({ user, cartCount }) => {
@@ -19,11 +20,15 @@ const Header = ({ user, cartCount }) => {
     };
   }, [avatarMenuOpen]);
 
-  const handleLogout = () => {
-    localStorage.removeItem('currentUser');
-    setAvatarMenuOpen(false);
-    navigate('/login');
-    window.location.reload();
+  const handleLogout = async () => {
+    try {
+      await userSessionService.clearUserSession();
+      setAvatarMenuOpen(false);
+      navigate('/login');
+      window.location.reload();
+    } catch (error) {
+      console.error('Error logging out:', error);
+    }
   };
 
   const handleProfileClick = () => {

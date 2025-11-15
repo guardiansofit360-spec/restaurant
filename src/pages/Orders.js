@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import './Orders.css';
 import AvatarPopup from '../components/AvatarPopup';
-import { orderManager } from '../utils/dataManager';
+import firestoreDataService from '../services/firestoreDataService';
+import userSessionService from '../services/userSessionService';
 import apiService from '../services/apiService';
 
 const Orders = ({ user, cart = [] }) => {
@@ -17,55 +18,63 @@ const Orders = ({ user, cart = [] }) => {
       return;
     }
 
-    // Load orders from API or localStorage
+    console.log('👤 Current user:', user);
+    console.log('🆔 User ID:', user.id);
+
+    // Load orders from Firestore
     const loadOrders = async () => {
       try {
-        // Try to load from API first
-        const apiOrders = await apiService.getUserOrders(user.id);
-        if (apiOrders && !apiOrders.error) {
-          // Format API orders to match expected structure
-          const formattedOrders = apiOrders.map(order => ({
-            id: order.id,
-            userId: order.user_id,
-            customerName: user.name,
-            customerEmail: user.email,
-            items: typeof order.items === 'string' ? JSON.parse(order.items) : order.items,
-            total: parseFloat(order.total),
-            status: order.status || 'Pending',
-            date: new Date(order.created_at).toISOString().split('T')[0],
-            time: new Date(order.created_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }),
-            timestamp: order.created_at,
-            address: order.delivery_address || 'Not provided'
-          }));
-          setOrders(formattedOrders);
-          return;
-        }
+        console.log('📦 Loading user orders from Firestore for user ID:', user.id);
+        // Use Firestore directly (API doesn't support customer fields)
+        const userOrders = await firestoreDataService.getUserOrders(String(user.id));
+        console.log('✅ Loaded', userOrders.length, 'orders');
+        console.log('📋 Orders:', userOrders);
+
+        // Sort by date - latest first
+        const sortedOrders = userOrders.sort((a, b) => {
+          const dateA = new Date(a.orderDate || 0);
+          const dateB = new Date(b.orderDate || 0);
+          return dateB - dateA; // Descending order (latest first)
+        });
+        setOrders(sortedOrders);
       } catch (error) {
-        console.log('API not available, using localStorage:', error);
+        console.error('Error loading user orders:', error);
       }
-      
-      // Fallback to localStorage
-      const userOrders = orderManager.getUserOrders(user.id);
-      setOrders(userOrders);
     };
 
     loadOrders();
+
+    // Real-time listener for orders
+    const unsubscribe = firestoreDataService.onOrdersChange((allOrders) => {
+      console.log('🔄 Orders updated in real-time, filtering for user:', user.id);
+      const userOrders = allOrders.filter(order => String(order.userId) === String(user.id));
+      console.log('✅ Filtered to', userOrders.length, 'user orders');
+
+      const sortedOrders = userOrders.sort((a, b) => {
+        const dateA = new Date(a.orderDate || 0);
+        const dateB = new Date(b.orderDate || 0);
+        return dateB - dateA;
+      });
+      setOrders(sortedOrders);
+    });
+
+    return () => unsubscribe && unsubscribe();
   }, [user, navigate]);
 
-  const handleReorder = (order) => {
+  const handleReorder = async (order) => {
     // Add all items from the order to cart
-    const cart = JSON.parse(localStorage.getItem('restaurant_cart') || '[]');
-    
+    const currentCart = await userSessionService.getCart(user.id);
+
     order.items.forEach(item => {
-      const existingItem = cart.find(i => i.id === item.id);
+      const existingItem = currentCart.find(i => i.id === item.id);
       if (existingItem) {
         existingItem.quantity += item.quantity;
       } else {
-        cart.push({ ...item });
+        currentCart.push({ ...item });
       }
     });
-    
-    localStorage.setItem('restaurant_cart', JSON.stringify(cart));
+
+    await userSessionService.saveCart(user.id, currentCart);
     navigate('/cart');
   };
 
@@ -166,18 +175,18 @@ const Orders = ({ user, cart = [] }) => {
                 <div>
                   <h3>Order #{order.id}</h3>
                   <p className="order-date">
-                    {new Date(order.date).toLocaleDateString('en-US', { 
-                      year: 'numeric', 
-                      month: 'long', 
-                      day: 'numeric' 
-                    })}
-                    {order.time && <span className="order-time"> • {order.time}</span>}
+                    {order.orderDate ? new Date(order.orderDate).toLocaleDateString('en-US', {
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric'
+                    }) : 'N/A'}
+                    {order.orderDate && <span className="order-time"> • {new Date(order.orderDate).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</span>}
                   </p>
                 </div>
-                <div 
+                <div
                   className="order-status"
-                  style={{ 
-                    backgroundColor: getStatusBackground(order.status), 
+                  style={{
+                    backgroundColor: getStatusBackground(order.status),
                     color: getStatusColor(order.status),
                     border: `2px solid ${getStatusColor(order.status)}`
                   }}
@@ -237,32 +246,32 @@ const Orders = ({ user, cart = [] }) => {
       <nav className="bottom-nav">
         <Link to="/" className="nav-item">
           <svg className="nav-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M3 9L12 2L21 9V20C21 20.5304 20.7893 21.0391 20.4142 21.4142C20.0391 21.7893 19.5304 22 19 22H5C4.46957 22 3.96086 21.7893 3.58579 21.4142C3.21071 21.0391 3 20.5304 3 20V9Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-            <path d="M9 22V12H15V22" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            <path d="M3 9L12 2L21 9V20C21 20.5304 20.7893 21.0391 20.4142 21.4142C20.0391 21.7893 19.5304 22 19 22H5C4.46957 22 3.96086 21.7893 3.58579 21.4142C3.21071 21.0391 3 20.5304 3 20V9Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            <path d="M9 22V12H15V22" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
           <span className="nav-label">Home</span>
         </Link>
         <Link to="/menu" className="nav-item">
           <svg className="nav-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M11 19C15.4183 19 19 15.4183 19 11C19 6.58172 15.4183 3 11 3C6.58172 3 3 6.58172 3 11C3 15.4183 6.58172 19 11 19Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-            <path d="M21 21L16.65 16.65" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            <path d="M11 19C15.4183 19 19 15.4183 19 11C19 6.58172 15.4183 3 11 3C6.58172 3 3 6.58172 3 11C3 15.4183 6.58172 19 11 19Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            <path d="M21 21L16.65 16.65" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
           <span className="nav-label">Menu</span>
         </Link>
         <Link to="/cart" className="nav-item cart-nav-item">
           <svg className="nav-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M3 3H5L5.4 5M7 13H17L21 5H5.4M7 13L5.4 5M7 13L4.70711 15.2929C4.07714 15.9229 4.52331 17 5.41421 17H17M17 17C15.8954 17 15 17.8954 15 19C15 20.1046 15.8954 21 17 21C18.1046 21 19 20.1046 19 19C19 17.8954 18.1046 17 17 17ZM9 19C9 20.1046 8.10457 21 7 21C5.89543 21 5 20.1046 5 19C5 17.8954 5.89543 17 7 17C8.10457 17 9 17.8954 9 19Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            <path d="M3 3H5L5.4 5M7 13H17L21 5H5.4M7 13L5.4 5M7 13L4.70711 15.2929C4.07714 15.9229 4.52331 17 5.41421 17H17M17 17C15.8954 17 15 17.8954 15 19C15 20.1046 15.8954 21 17 21C18.1046 21 19 20.1046 19 19C19 17.8954 18.1046 17 17 17ZM9 19C9 20.1046 8.10457 21 7 21C5.89543 21 5 20.1046 5 19C5 17.8954 5.89543 17 7 17C8.10457 17 9 17.8954 9 19Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
           {cartCount > 0 && <span className="cart-count-badge">{cartCount}</span>}
           <span className="nav-label">Cart</span>
         </Link>
         <Link to="/orders" className="nav-item active">
           <svg className="nav-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M9 11L12 14L22 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-            <path d="M21 12V19C21 19.5304 20.7893 20.0391 20.4142 20.4142C20.0391 20.7893 19.5304 21 19 21H5C4.46957 21 3.96086 20.7893 3.58579 20.4142C3.21071 20.0391 3 19.5304 3 19V5C3 4.46957 3.21071 3.96086 3.58579 3.58579C3.96086 3.21071 4.46957 3 5 3H16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            <path d="M9 11L12 14L22 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            <path d="M21 12V19C21 19.5304 20.7893 20.0391 20.4142 20.4142C20.0391 20.7893 19.5304 21 19 21H5C4.46957 21 3.96086 20.7893 3.58579 20.4142C3.21071 20.0391 3 19.5304 3 19V5C3 4.46957 3.21071 3.96086 3.58579 3.58579C3.96086 3.21071 4.46957 3 5 3H16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
           {(() => {
-            const activeOrders = orders.filter(order => 
+            const activeOrders = orders.filter(order =>
               order.status.toLowerCase() !== 'delivered' && order.status.toLowerCase() !== 'completed'
             );
             return activeOrders.length > 0 ? <span className="orders-count-badge">{activeOrders.length}</span> : null;
@@ -273,10 +282,10 @@ const Orders = ({ user, cart = [] }) => {
 
       {/* Avatar Popup */}
       {user && (
-        <AvatarPopup 
-          user={user} 
-          isOpen={showAvatarPopup} 
-          onClose={() => setShowAvatarPopup(false)} 
+        <AvatarPopup
+          user={user}
+          isOpen={showAvatarPopup}
+          onClose={() => setShowAvatarPopup(false)}
         />
       )}
     </div>

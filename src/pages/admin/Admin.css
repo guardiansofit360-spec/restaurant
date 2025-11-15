@@ -149,14 +149,26 @@
 .activity-item {
   display: flex;
   justify-content: space-between;
+  align-items: center;
   padding: 15px;
   background-color: #f9fafb;
   border-radius: 8px;
+  gap: 20px;
+}
+
+.activity-item span:first-child {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .time {
   color: #9ca3af;
   font-size: 14px;
+  white-space: nowrap;
+  flex-shrink: 0;
+  min-width: fit-content;
 }
 
 /* Search Bar */
@@ -435,7 +447,7 @@
 }
 
 .admin-order-header h3 {
-  font-size: 18px;
+  font-size: 13px;
   font-weight: 600;
   color: #1F1F1F;
   margin: 0 0 5px 0;

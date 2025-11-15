@@ -1,15 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import './Admin.css';
 import offersDataJson from '../../data/offersData.json';
 import AvatarPopup from '../../components/AvatarPopup';
+import firestoreDataService from '../../services/firestoreDataService';
+import userSessionService from '../../services/userSessionService';
 
 const Offers = () => {
   const [offers, setOffers] = useState([]);
   const [showAvatarPopup, setShowAvatarPopup] = useState(false);
-  
-  // Get user from localStorage
-  const user = JSON.parse(localStorage.getItem('currentUser') || '{}');
+  const [user, setUser] = useState(null);
 
   const [newOffer, setNewOffer] = useState({
     title: '',
@@ -17,36 +17,82 @@ const Offers = () => {
     discount: ''
   });
 
-  // Load offers from localStorage on mount
-  React.useEffect(() => {
-    const storedOffers = localStorage.getItem('restaurant_offers');
-    const loadedOffers = storedOffers ? JSON.parse(storedOffers) : offersDataJson;
-    setOffers(loadedOffers);
+  // Load user session
+  useEffect(() => {
+    const loadUser = async () => {
+      const session = await userSessionService.getUserSession();
+      setUser(session);
+    };
+    loadUser();
   }, []);
 
-  const handleAddOffer = (e) => {
-    e.preventDefault();
-    const offer = {
-      id: Date.now(),
-      ...newOffer,
-      discount: parseInt(newOffer.discount),
-      active: true
+  // Load offers from Firestore
+  useEffect(() => {
+    const loadOffers = async () => {
+      let loadedOffers = await firestoreDataService.getOffers();
+      
+      // Initialize with default data if empty
+      if (loadedOffers.length === 0) {
+        console.log('Initializing offers from JSON...');
+        await firestoreDataService.initializeCollections({ offers: offersDataJson });
+        loadedOffers = await firestoreDataService.getOffers();
+      }
+      
+      setOffers(loadedOffers);
     };
-    const updatedOffers = [...offers, offer];
-    setOffers(updatedOffers);
-    // Save to localStorage
-    localStorage.setItem('restaurant_offers', JSON.stringify(updatedOffers));
-    setNewOffer({ title: '', code: '', discount: '' });
+    loadOffers();
+  }, []);
+
+  // Real-time listener for offers
+  useEffect(() => {
+    const unsubscribe = firestoreDataService.onOffersChange((updatedOffers) => {
+      setOffers(updatedOffers);
+    });
+
+    return () => unsubscribe && unsubscribe();
+  }, []);
+
+  const handleAddOffer = async (e) => {
+    e.preventDefault();
+    try {
+      const offer = {
+        ...newOffer,
+        discount: parseInt(newOffer.discount),
+        active: true
+      };
+      await firestoreDataService.createOffer(offer);
+      setNewOffer({ title: '', code: '', discount: '' });
+    } catch (error) {
+      console.error('Error adding offer:', error);
+      alert('Failed to add offer. Please try again.');
+    }
   };
 
-  const toggleOffer = (offerId) => {
-    const updatedOffers = offers.map(offer =>
-      offer.id === offerId ? { ...offer, active: !offer.active } : offer
-    );
-    setOffers(updatedOffers);
-    // Save to localStorage
-    localStorage.setItem('restaurant_offers', JSON.stringify(updatedOffers));
+  const toggleOffer = async (offerId) => {
+    try {
+      const offer = offers.find(o => o.id === offerId);
+      if (offer) {
+        await firestoreDataService.updateOffer(offerId, { active: !offer.active });
+      }
+    } catch (error) {
+      console.error('Error toggling offer:', error);
+      alert('Failed to update offer. Please try again.');
+    }
   };
+
+  if (!user) {
+    return (
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'center', 
+        alignItems: 'center', 
+        height: '100vh',
+        fontSize: '18px'
+      }}>
+        Loading...
+      </div>
+    );
+  }
 
   return (
     <div className="admin-page">
@@ -118,7 +164,7 @@ const Offers = () => {
                 <td><strong>{offer.code}</strong></td>
                 <td>{offer.discount}%</td>
                 <td>
-                  <span className={`status €{offer.active ? 'in-stock' : 'low-stock'}`}>
+                  <span className={`status ï¿½{offer.active ? 'in-stock' : 'low-stock'}`}>
                     {offer.active ? 'Active' : 'Inactive'}
                   </span>
                 </td>

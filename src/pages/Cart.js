@@ -5,26 +5,44 @@ import './Cart.css';
 import AvatarPopup from '../components/AvatarPopup';
 import orderCompleteAnimation from '../img/Order completed.json';
 import notFoundAnimation from '../img/Not Found.json';
-import { orderManager } from '../utils/dataManager';
+import useActiveOrdersCount from '../hooks/useActiveOrdersCount';
 
 const Cart = ({ cart, updateQuantity, removeFromCart, clearCart, user }) => {
   const [orderPlaced, setOrderPlaced] = useState(false);
   const [showAvatarPopup, setShowAvatarPopup] = useState(false);
   const [activeOrdersCount, setActiveOrdersCount] = useState(0);
+  const [showCheckoutForm, setShowCheckoutForm] = useState(false);
+  const [isPlacingOrder, setIsPlacingOrder] = useState(false);
+  
+  // Checkout form state
+  const [checkoutData, setCheckoutData] = useState({
+    name: '',
+    phone: '',
+    address: ''
+  });
 
   const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
   const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
 
-  // Get active orders count
+  // Auto-fill checkout form with user profile data
   useEffect(() => {
     if (user) {
-      const userOrders = orderManager.getUserOrders(user.id);
-      const activeOrders = userOrders.filter(order => 
-        order.status.toLowerCase() !== 'delivered' && order.status.toLowerCase() !== 'completed'
-      );
-      setActiveOrdersCount(activeOrders.length);
+      console.log('Auto-filling checkout form with user data:', user);
+      setCheckoutData({
+        name: user.name || '',
+        phone: user.phone || '',
+        address: user.address || ''
+      });
     }
   }, [user]);
+
+  // Get active orders count
+  // Get active orders count using hook
+  const activeOrdersCountFromHook = useActiveOrdersCount(user?.id);
+  
+  useEffect(() => {
+    setActiveOrdersCount(activeOrdersCountFromHook);
+  }, [activeOrdersCountFromHook]);
 
   const playSuccessSound = () => {
     // Create success sound using Web Audio API
@@ -55,13 +73,54 @@ const Cart = ({ cart, updateQuantity, removeFromCart, clearCart, user }) => {
     oscillator2.stop(audioContext.currentTime + 0.5);
   };
 
-  const handleCheckout = async () => {
+  const handleCheckoutClick = () => {
     if (cart.length > 0 && user) {
+      setShowCheckoutForm(true);
+    }
+  };
+
+  const handleCheckoutFormChange = (e) => {
+    setCheckoutData({
+      ...checkoutData,
+      [e.target.name]: e.target.value
+    });
+  };
+
+  const handleConfirmOrder = async () => {
+    // Prevent multiple submissions
+    if (isPlacingOrder) {
+      return;
+    }
+
+    console.log('🔔 handleConfirmOrder called!');
+    console.log('Cart length:', cart.length);
+    console.log('User:', user);
+    console.log('Checkout data:', checkoutData);
+    
+    // Validate form
+    if (!checkoutData.name.trim()) {
+      alert('Please enter your name');
+      return;
+    }
+    if (!checkoutData.phone.trim()) {
+      alert('Please enter your phone number');
+      return;
+    }
+    if (!checkoutData.address.trim()) {
+      alert('Please enter your delivery address');
+      return;
+    }
+
+    if (cart.length > 0 && user) {
+      setIsPlacingOrder(true);
       try {
         // Create new order with timestamp
         const orderDate = new Date();
         const orderData = {
-          userId: user.id,
+          user_id: user.id,
+          customer_name: checkoutData.name,
+          customer_email: user.email || '',
+          customer_phone: checkoutData.phone,
           items: cart.map(item => ({
             id: item.id,
             name: item.name,
@@ -69,42 +128,40 @@ const Cart = ({ cart, updateQuantity, removeFromCart, clearCart, user }) => {
             quantity: item.quantity,
             image: item.image
           })),
+          subtotal: total,
+          delivery_fee: 5.00,
           total: total + 5.00, // Include delivery fee
-          deliveryAddress: user.address || 'Not provided',
-          paymentMethod: 'Cash on Delivery'
+          delivery_address: checkoutData.address,
+          payment_method: 'Cash on Delivery',
+          status: 'pending'
         };
 
-        // Try to save order to API (database)
-        try {
-          const apiService = require('../services/apiService').default;
-          await apiService.createOrder(orderData);
-        } catch (apiError) {
-          console.log('API not available, saving locally:', apiError);
-          // Fallback to localStorage if API is not available
-          const newOrder = {
-            id: Date.now(),
-            userId: user.id,
-            customerName: user.name,
-            customerEmail: user.email,
-            items: orderData.items,
-            subtotal: total,
-            deliveryFee: 5.00,
-            total: orderData.total,
-            status: 'Pending',
-            date: orderDate.toISOString().split('T')[0],
-            time: orderDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }),
-            timestamp: orderDate.toISOString(),
-            address: orderData.deliveryAddress
-          };
-          orderManager.createOrder(newOrder);
-        }
+        // Save to Firestore directly (API database doesn't support customer fields yet)
+        console.log('💾 Saving order to Firestore...');
+        const firestoreDataService = require('../services/firestoreDataService').default;
+        const newOrder = {
+          userId: String(user.id || user.userId),
+          customerName: checkoutData.name,
+          customerEmail: user.email || '',
+          customerPhone: checkoutData.phone,
+          items: orderData.items,
+          subtotal: total,
+          deliveryFee: 5.00,
+          total: orderData.total,
+          status: 'pending',
+          address: checkoutData.address,
+          paymentMethod: orderData.payment_method
+        };
+        console.log('=== ORDER DEBUG ===');
+        console.log('User object:', user);
+        console.log('Checkout form data:', checkoutData);
+        console.log('Creating order with data:', newOrder);
+        console.log('==================');
+        await firestoreDataService.createOrder(newOrder);
 
         // Update active orders count
-        const userOrders = orderManager.getUserOrders(user.id);
-        const activeOrders = userOrders.filter(order => 
-          order.status.toLowerCase() !== 'delivered' && order.status.toLowerCase() !== 'completed'
-        );
-        setActiveOrdersCount(activeOrders.length);
+        const activeCount = await firestoreDataService.getActiveOrdersCount();
+        setActiveOrdersCount(activeCount);
 
         // Play success sound
         playSuccessSound();
@@ -112,10 +169,12 @@ const Cart = ({ cart, updateQuantity, removeFromCart, clearCart, user }) => {
         // Clear cart and show success message
         clearCart();
         setOrderPlaced(true);
+        setIsPlacingOrder(false);
         // Don't auto-hide - let user navigate away naturally
       } catch (error) {
         console.error('Checkout error:', error);
         alert('Failed to place order. Please try again.');
+        setIsPlacingOrder(false);
       }
     }
   };
@@ -343,7 +402,7 @@ const Cart = ({ cart, updateQuantity, removeFromCart, clearCart, user }) => {
             </div>
             <div className="item-details">
               <h3>{item.name}</h3>
-              <p className="item-price">₹{item.price}</p>
+              <p className="item-price">€{item.price}</p>
             </div>
             <div className="item-actions">
               <div className="item-quantity">
@@ -361,20 +420,101 @@ const Cart = ({ cart, updateQuantity, removeFromCart, clearCart, user }) => {
         <h2>Order Summary</h2>
         <div className="summary-row">
           <span>Subtotal</span>
-          <span>${total.toFixed(2)}</span>
+          <span>€{total.toFixed(2)}</span>
         </div>
         <div className="summary-row">
           <span>Delivery Fee</span>
-          <span>�5.00</span>
+          <span>€5.00</span>
         </div>
         <div className="summary-row total">
           <span>Total</span>
-          <span>${(total + 5).toFixed(2)}</span>
+          <span>€{(total + 5).toFixed(2)}</span>
         </div>
-        <button className="checkout-btn" onClick={handleCheckout}>
-          Place Order
+        <button className="checkout-btn" onClick={handleCheckoutClick}>
+          Proceed to Checkout
         </button>
       </div>
+
+      {/* Checkout Form Modal */}
+      {showCheckoutForm && (
+        <div className="checkout-modal-overlay" onClick={() => setShowCheckoutForm(false)}>
+          <div className="checkout-modal" onClick={(e) => e.stopPropagation()}>
+            <h2>Confirm Order Details</h2>
+            <p className="checkout-subtitle">Please verify your information</p>
+            
+            <form className="checkout-form" onSubmit={(e) => { e.preventDefault(); handleConfirmOrder(); }}>
+              <div className="form-group">
+                <label>Full Name *</label>
+                <input
+                  type="text"
+                  name="name"
+                  value={checkoutData.name}
+                  onChange={handleCheckoutFormChange}
+                  placeholder="Enter your full name"
+                  required
+                />
+              </div>
+
+              <div className="form-group">
+                <label>Phone Number *</label>
+                <input
+                  type="tel"
+                  name="phone"
+                  value={checkoutData.phone}
+                  onChange={handleCheckoutFormChange}
+                  placeholder="Enter your phone number"
+                  required
+                />
+              </div>
+
+              <div className="form-group">
+                <label>Delivery Address *</label>
+                <textarea
+                  name="address"
+                  value={checkoutData.address}
+                  onChange={handleCheckoutFormChange}
+                  placeholder="Enter your complete delivery address"
+                  rows="3"
+                  required
+                />
+              </div>
+
+              <div className="checkout-summary">
+                <div className="summary-row">
+                  <span>Subtotal:</span>
+                  <span>€{total.toFixed(2)}</span>
+                </div>
+                <div className="summary-row">
+                  <span>Delivery Fee:</span>
+                  <span>€5.00</span>
+                </div>
+                <div className="summary-row total">
+                  <span>Total:</span>
+                  <span>€{(total + 5).toFixed(2)}</span>
+                </div>
+              </div>
+
+              <div className="checkout-actions">
+                <button 
+                  type="button" 
+                  className="cancel-btn" 
+                  onClick={() => setShowCheckoutForm(false)}
+                  disabled={isPlacingOrder}
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit" 
+                  className="confirm-btn"
+                  disabled={isPlacingOrder}
+                >
+                  {isPlacingOrder ? 'Placing Order...' : 'Confirm & Place Order'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       <nav className="bottom-nav">
         <Link to="/" className="nav-item">
